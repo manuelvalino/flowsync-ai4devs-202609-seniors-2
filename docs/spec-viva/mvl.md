@@ -32,7 +32,7 @@ El sistema SHALL crear una cuenta cuando reciba en `POST /api/v1/auth/signup` un
 
 ### Requirement: Validación del registro
 
-El sistema SHALL rechazar con 422 cualquier registro con campos ausentes o inválidos, indicando en la respuesta cada campo afectado, y SHALL NOT crear la cuenta en ese caso. El email MUST tener formato válido y como mucho 254 caracteres; la contraseña MUST tener entre 8 y 32 caracteres; la confirmación MUST coincidir con la contraseña.
+El sistema SHALL rechazar con 422 cualquier registro con campos ausentes o inválidos, indicando en la respuesta cada campo afectado, y SHALL NOT crear la cuenta en ese caso. El email MUST tener formato válido y como mucho 254 caracteres; la contraseña MUST tener entre 8 y 32 caracteres; la confirmación MUST coincidir con la contraseña y cumplir esos mismos límites de longitud, por lo que un error de longitud se informa en ambos campos.
 
 #### Scenario: Campos obligatorios ausentes
 
@@ -46,13 +46,13 @@ El sistema SHALL rechazar con 422 cualquier registro con campos ausentes o invá
 
 #### Scenario: Contraseña demasiado corta
 
-- **WHEN** se envía el registro con una contraseña de 7 caracteres
-- **THEN** la respuesta es 422 con un error de longitud mínima asociado al campo `password`
+- **WHEN** se envía el registro con una contraseña de 7 caracteres repetida idéntica en la confirmación
+- **THEN** la respuesta es 422 con un error de longitud mínima asociado al campo `password` y otro al campo `passwordConfirmation`
 
 #### Scenario: Contraseña demasiado larga
 
-- **WHEN** se envía el registro con una contraseña de 33 caracteres
-- **THEN** la respuesta es 422 con un error de longitud máxima asociado al campo `password`
+- **WHEN** se envía el registro con una contraseña de 33 caracteres repetida idéntica en la confirmación
+- **THEN** la respuesta es 422 con un error de longitud máxima asociado al campo `password` y otro al campo `passwordConfirmation`
 
 #### Scenario: La confirmación no coincide
 
@@ -108,7 +108,7 @@ El sistema SHALL responder 400, sin asociar el error a ningún campo, tanto cuan
 
 ### Requirement: Validación del inicio de sesión
 
-El sistema SHALL rechazar con 422 un inicio de sesión al que le falte el email o la contraseña, o cuyo email no tenga formato válido, indicando cada campo afectado.
+El sistema SHALL rechazar con 422 un inicio de sesión al que le falte el email o la contraseña, o cuyo email no tenga formato válido o supere los 254 caracteres, indicando cada campo afectado.
 
 #### Scenario: Campos ausentes
 
@@ -119,6 +119,11 @@ El sistema SHALL rechazar con 422 un inicio de sesión al que le falte el email 
 
 - **WHEN** se inicia sesión con `email` «nope»
 - **THEN** la respuesta es 422 con un error asociado al campo `email`
+
+#### Scenario: Email demasiado largo
+
+- **WHEN** se inicia sesión con un email de más de 254 caracteres
+- **THEN** la respuesta es 422 con un error asociado al campo `email` y no se comprueban las credenciales
 
 ### Requirement: Rutas protegidas por token
 
@@ -150,7 +155,7 @@ El sistema SHALL devolver en `GET /api/v1/account/profile` los datos públicos d
 
 ### Requirement: Iniciales de la cuenta
 
-El sistema SHALL calcular las iniciales de cada cuenta en mayúsculas: si el nombre completo tiene al menos dos palabras, la primera letra de cada una de las dos primeras; si tiene una sola palabra, sus dos primeras letras; y si no hay nombre, la primera letra de la parte del email anterior a la arroba seguida de la primera letra del dominio.
+El sistema SHALL calcular las iniciales de cada cuenta en mayúsculas, a partir del nombre completo sin los espacios de los extremos y separándolo por cada espacio individual: si los dos primeros trozos no están vacíos, la primera letra de cada uno; si no, las dos primeras letras del primer trozo (o la única, si solo tiene una). Si no hay nombre, SHALL usar la primera letra de la parte del email anterior a la arroba seguida de la primera letra del dominio.
 
 #### Scenario: Nombre de dos palabras
 
@@ -161,6 +166,26 @@ El sistema SHALL calcular las iniciales de cada cuenta en mayúsculas: si el nom
 
 - **WHEN** la cuenta tiene el nombre «Ada»
 - **THEN** sus iniciales son «AD»
+
+#### Scenario: Nombre de una sola letra
+
+- **WHEN** la cuenta tiene el nombre «A»
+- **THEN** sus iniciales son «A»
+
+#### Scenario: Nombre de tres palabras
+
+- **WHEN** la cuenta tiene el nombre «Ada Byron Lovelace»
+- **THEN** sus iniciales son «AB»
+
+#### Scenario: Palabras separadas por más de un espacio
+
+- **WHEN** la cuenta tiene el nombre «Ada  Lovelace», con dos espacios entre las palabras
+- **THEN** sus iniciales son «AD»
+
+#### Scenario: Espacios en los extremos del nombre
+
+- **WHEN** se registra la cuenta con el nombre « Ada Lovelace »
+- **THEN** el nombre se guarda como «Ada Lovelace» y sus iniciales son «AL»
 
 #### Scenario: Sin nombre
 
