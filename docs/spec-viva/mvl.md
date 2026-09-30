@@ -312,7 +312,7 @@ El sistema SHALL conservar la sesión en el navegador tras recargar la página y
 
 #### Scenario: Sesión rechazada por el servidor
 
-- **WHEN** la persona abre la aplicación y el servidor ya no reconoce su sesión
+- **WHEN** la persona abre la aplicación con una sesión guardada en el navegador que el servidor ya no reconoce, porque se invalidó fuera de la aplicación
 - **THEN** ve la pantalla de inicio de sesión con el aviso «Tu sesión ha caducado. Vuelve a iniciar sesión.», y la sesión se olvida en el navegador
 
 #### Scenario: Servidor caído al abrir la aplicación
@@ -347,3 +347,30 @@ El sistema SHALL llevar al perfil a cualquier persona con sesión iniciada que i
 
 - **WHEN** una persona con sesión iniciada abre la raíz de la aplicación o una dirección que no existe
 - **THEN** ve su perfil
+
+---
+
+## Parte B: las tres listas
+
+### 1. Requisitos escritos y comprobados
+
+- Escritos por el agente: **18**
+- Comprobados, sobre todo probándolos en el navegador más que leyendo el código: **9** (2 de API y 7 de pantalla)
+
+### 2. Incoherencias que aparecieron al escribirla
+
+- El email se recorta de espacios pero no se normaliza en mayúsculas: se ve en `POST /api/v1/auth/signup`, donde «ADA@X.com» crea una segunda cuenta junto a «ada@x.com», y en `POST /api/v1/auth/login`, donde «Ada@x.com» da 400.
+- Todas las respuestas correctas van envueltas en `data` salvo la del cierre de sesión, que devuelve un `message` suelto y en inglés: se ve en `POST /api/v1/account/logout`.
+- El nombre completo es opcional en la pantalla, pero la API exige que la clave viaje aunque sea `null`: se ve en `POST /api/v1/auth/signup` sin `fullName`, que da 422.
+- Un solo fallo de longitud en la contraseña produce dos errores, porque la confirmación repite los límites: se ve en el 422 del registro y en la pantalla de registro, con el mensaje bajo los dos campos.
+- Las iniciales usan dos reglas distintas: con nombre toman palabras, y sin nombre mezclan el usuario y el dominio del email; además, un doble espacio en el nombre cambia «AL» por «AD». Se ve en `initials` del perfil y en el avatar.
+- La pantalla tiene un aviso «Tu sesión ha caducado», pero las sesiones nunca caducan y ningún camino de la propia aplicación deja en el navegador una sesión que el servidor rechace: cerrar sesión en otra pestaña borra la sesión guardada, y cerrarla en otro dispositivo no afecta a esta. Solo se ve al abrir la aplicación tras invalidar la sesión por fuera, por ejemplo manipulándola en el navegador o cerrándola directamente contra la API.
+- El servidor manda en todas sus respuestas una cookie de sesión que caduca a las 2 horas, pero no interviene en el acceso: la sesión real es el token, que no caduca nunca. Desde fuera parece que la sesión expira a las 2 horas y no es así. Se ve en las cabeceras de respuesta de cualquier llamada a `/api/v1`.
+- Los mensajes de error de la pantalla de registro no siguen un mismo estilo: unos empiezan en mayúscula y los de longitud en minúscula («la contraseña debe tener al menos 8 caracteres.»).
+
+### 3. Lo que no supe decidir si era bug o contrato
+
+- **Email sensible a mayúsculas:** o el email es un identificador literal y es una decisión, o falta normalizarlo y permite cuentas duplicadas y logins fallidos.
+- **Cierre de sesión solo del dispositivo actual y tokens sin caducidad:** o es un diseño deliberado de sesiones independientes por dispositivo que cumple la persistencia que pide el PRD, o faltan la expiración y la opción de cerrar todas las sesiones.
+- **Iniciales sin nombre («manu@gmail.com» → «MG»):** o es una regla pensada, usuario más dominio, o es un efecto colateral de reutilizar para el email la misma partición que se usa para el nombre.
+- **Tras registrarse se llega al perfil, no a un espacio compartido:** o el perfil es hoy el espacio y RF-1 se cumple, o E1 no está terminada, como advierte el propio PRD (PA-11).
