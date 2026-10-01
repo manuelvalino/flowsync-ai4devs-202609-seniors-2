@@ -36,10 +36,10 @@ export function TasksPage() {
   const [title, setTitle] = useState('')
   const [isCreating, setCreating] = useState(false)
   const [titleError, setTitleError] = useState<string | null>(null)
-  const [createError, setCreateError] = useState<string | null>(null)
+  // Último fallo de una acción (crear o cambiar estado); cualquier acción nueva lo borra.
+  const [actionError, setActionError] = useState<string | null>(null)
   // Tareas con un cambio de estado en curso: sus botones no admiten otro cambio.
   const [savingIds, setSavingIds] = useState<ReadonlySet<number>>(new Set())
-  const [statusError, setStatusError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -49,7 +49,8 @@ export function TasksPage() {
     api
       .listTasks(token)
       .then((list) => {
-        if (!cancelled) setTasks(list)
+        // Si ya hay lista (p. ej. tras crear una tarea antes de que llegase), manda la más reciente.
+        if (!cancelled) setTasks((current) => current ?? list)
       })
       .catch((error: unknown) => {
         if (!cancelled) setLoadError(errorMessage(error))
@@ -66,17 +67,23 @@ export function TasksPage() {
 
     setCreating(true)
     setTitleError(null)
-    setCreateError(null)
+    setActionError(null)
 
     try {
       const task = await api.createTask(token, title)
-      setTasks((current) => [...(current ?? []), task])
+      if (tasks === null) {
+        // La lista inicial no llegó: se pide entera para no mostrar solo la tarea nueva.
+        setTasks(await api.listTasks(token))
+        setLoadError(null)
+      } else {
+        setTasks([...tasks, task])
+      }
       setTitle('')
     } catch (error) {
       if (error instanceof ApiError && error.fieldErrors.title) {
         setTitleError(error.fieldErrors.title)
       } else {
-        setCreateError(errorMessage(error))
+        setActionError(errorMessage(error))
       }
     } finally {
       setCreating(false)
@@ -86,7 +93,7 @@ export function TasksPage() {
   const handleStatus = async (task: Task, status: TaskStatus) => {
     if (!token || status === task.status || savingIds.has(task.id)) return
 
-    setStatusError(null)
+    setActionError(null)
     setSavingIds((current) => new Set(current).add(task.id))
 
     try {
@@ -97,7 +104,7 @@ export function TasksPage() {
         ),
       )
     } catch (error) {
-      setStatusError(errorMessage(error))
+      setActionError(errorMessage(error))
     } finally {
       setSavingIds((current) => {
         const next = new Set(current)
@@ -149,12 +156,10 @@ export function TasksPage() {
               <FieldError id="title-error" message={titleError ?? undefined} />
             </form>
 
-            {(createError || statusError || loadError) && (
+            {(actionError || loadError) && (
               <Alert variant="destructive">
                 <AlertCircleIcon />
-                <AlertDescription>
-                  {createError ?? statusError ?? loadError}
-                </AlertDescription>
+                <AlertDescription>{actionError ?? loadError}</AlertDescription>
               </Alert>
             )}
 
