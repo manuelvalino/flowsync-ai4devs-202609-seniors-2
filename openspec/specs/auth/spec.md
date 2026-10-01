@@ -8,7 +8,7 @@ Cuentas y acceso de FlowSync: registro de usuarios, inicio y cierre de sesión m
 
 ### Requirement: Registro de cuenta por API
 
-El sistema SHALL permitir crear una cuenta con `POST /api/v1/auth/signup` a partir de `fullName` (texto o `null`), `email`, `password` y `passwordConfirmation`, y SHALL responder con el usuario creado y un token de acceso.
+El sistema SHALL permitir crear una cuenta con `POST /api/v1/auth/signup` a partir de `fullName` (texto o `null`, pero siempre presente), `email`, `password` y `passwordConfirmation`, y SHALL responder con el usuario creado y un token de acceso.
 
 #### Scenario: Registro correcto
 
@@ -19,6 +19,11 @@ El sistema SHALL permitir crear una cuenta con `POST /api/v1/auth/signup` a part
 #### Scenario: Registro sin nombre
 
 - **WHEN** se envía `fullName` con valor `null`
+- **THEN** la cuenta se crea y `data.user.fullName` es `null`
+
+#### Scenario: Nombre vacío
+
+- **WHEN** se envía `fullName` como cadena vacía
 - **THEN** la cuenta se crea y `data.user.fullName` es `null`
 
 #### Scenario: Email ya registrado
@@ -44,7 +49,7 @@ El sistema SHALL permitir crear una cuenta con `POST /api/v1/auth/signup` a part
 
 #### Scenario: Campos obligatorios ausentes
 
-- **WHEN** falta `email`, `password` o `passwordConfirmation`
+- **WHEN** falta `fullName`, `email`, `password` o `passwordConfirmation` (aunque `fullName` admita `null`, la clave debe enviarse)
 - **THEN** la respuesta es 422 con un error por cada campo ausente
 
 ### Requirement: Inicio de sesión por API
@@ -73,7 +78,7 @@ El sistema SHALL permitir iniciar sesión con `POST /api/v1/auth/login` mediante
 
 #### Scenario: Datos de acceso mal formados
 
-- **WHEN** falta el `email` o la `password`, o el `email` no es una dirección válida
+- **WHEN** falta el `email` o la `password` (o viene vacía), o el `email` no es una dirección válida
 - **THEN** la respuesta es 422 con un error por cada campo afectado
 
 ### Requirement: Consulta del perfil propio por API
@@ -185,6 +190,11 @@ El sistema SHALL ofrecer una pantalla de inicio de sesión en `/login` con los c
 
 - **WHEN** el email o la contraseña no son correctos
 - **THEN** se muestra un aviso general «El email o la contraseña no son correctos.» y la persona permanece en la pantalla
+
+#### Scenario: Errores de validación del servidor
+
+- **WHEN** el servidor rechaza el email por no ser una dirección válida o por estar vacío, o la contraseña por estar vacía
+- **THEN** el mensaje en castellano aparece bajo el campo afectado, como «Introduce una dirección de email válida.» o «Falta rellenar la contraseña.»
 
 #### Scenario: Servidor inaccesible
 
