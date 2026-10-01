@@ -18,12 +18,12 @@ Sin tests en este change: la verificación es por tipos, lint, build, peticiones
 ## 3. Interfaz de la lista
 
 - [x] 3.1 Añadir el tipo `Task`, los estados con sus etiquetas (Pendiente, En curso, Hecho) y las llamadas `listTasks`, `createTask` y `updateTask` en `lib/api.ts`, ampliar `request()` a `PATCH` y traducir el `minLength` del título como «Falta rellenar el título.»; verificar con `npm run build`
-- [ ] 3.2 Crear la página `/tasks` con el formulario de creación (solo título, botón «Crear tarea», error junto al campo), la lista (título, responsable por nombre o «Sin nombre», estado; sin fechas), el estado vacío explicativo y el aviso si la lista no carga; verificar en el navegador cada caso, incluido el título en blanco y un responsable con nombre en blanco
-- [ ] 3.3 Añadir el cambio de estado por fila con tres botones, desactivados mientras el cambio se guarda, aviso si falla y fila sin cambios en ese caso; verificar en el navegador con una tarea propia y una creada por otra cuenta
-- [ ] 3.4 Registrar `/tasks` dentro de `ProtectedRoute`; verificar que sin sesión redirige a `/login`
+- [x] 3.2 Crear la página `/tasks` con el formulario de creación (solo título, botón «Crear tarea», error junto al campo), la lista (título, responsable por nombre o «Sin nombre», estado; sin fechas), el estado vacío explicativo y el aviso si la lista no carga; verificar en el navegador cada caso, incluido el título en blanco y un responsable con nombre en blanco
+- [x] 3.3 Añadir el cambio de estado por fila con tres botones, desactivados mientras el cambio se guarda, aviso si falla y fila sin cambios en ese caso; verificar en el navegador con una tarea propia y una creada por otra cuenta
+- [x] 3.4 Registrar `/tasks` dentro de `ProtectedRoute`; verificar que sin sesión redirige a `/login`
 
 ## 4. Inicio en la lista y enlaces
 
-- [ ] 4.1 Cambiar a `/tasks` las redirecciones de `PublicOnlyRoute` y del comodín, y añadir el enlace «Tareas» en el perfil y el enlace al perfil en la lista; verificar que registro y login terminan en la lista, que `/login` y `/register` con sesión llevan a `/tasks`, que una URL desconocida lleva a `/tasks` y que `/profile` sigue accesible
+- [x] 4.1 Cambiar a `/tasks` las redirecciones de `PublicOnlyRoute` y del comodín, y añadir el enlace «Tareas» en el perfil y el enlace al perfil en la lista; verificar que registro y login terminan en la lista, que `/login` y `/register` con sesión llevan a `/tasks`, que una URL desconocida lleva a `/tasks` y que `/profile` sigue accesible
 - [x] 4.2 Ejecutar `npm run build` y `npm run lint` en `frontend/` y `npm run typecheck` y `npm run lint` en `backend/`; verificar que terminan sin errores
-- [ ] 4.3 Recorrido final con dos cuentas en el navegador: ambas ven la misma lista, una cambia el estado de una tarea de la otra, un responsable sin nombre se ve como «Sin nombre» y no aparece ningún correo ni fecha; verificar que coincide con los escenarios de `specs/tasks/spec.md`
+- [x] 4.3 Recorrido final con dos cuentas en el navegador: ambas ven la misma lista, una cambia el estado de una tarea de la otra, un responsable sin nombre se ve como «Sin nombre» y no aparece ningún correo ni fecha; verificar que coincide con los escenarios de `specs/tasks/spec.md`
