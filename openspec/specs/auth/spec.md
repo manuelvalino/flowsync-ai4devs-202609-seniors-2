@@ -35,6 +35,7 @@ El sistema SHALL permitir crear una cuenta con `POST /api/v1/auth/signup` a part
 
 - **WHEN** `passwordConfirmation` no coincide con `password`
 - **THEN** la respuesta es 422 con un error sobre el campo `passwordConfirmation`
+- **AND** si además la confirmación tiene menos de 8 caracteres, también hay un error de longitud sobre ese campo
 
 #### Scenario: Email mal formado o demasiado largo
 
@@ -43,7 +44,7 @@ El sistema SHALL permitir crear una cuenta con `POST /api/v1/auth/signup` a part
 
 #### Scenario: Campos obligatorios ausentes
 
-- **WHEN** falta `email`, `password` o `passwordConfirmation`, o falta la clave `fullName`
+- **WHEN** falta `email`, `password` o `passwordConfirmation`
 - **THEN** la respuesta es 422 con un error por cada campo ausente
 
 ### Requirement: Inicio de sesión por API
@@ -65,6 +66,11 @@ El sistema SHALL permitir iniciar sesión con `POST /api/v1/auth/login` mediante
 - **WHEN** el `email` no existe o la `password` no corresponde a la cuenta
 - **THEN** la respuesta es 400 y no se devuelve ningún token
 
+#### Scenario: El email distingue mayúsculas y minúsculas
+
+- **WHEN** se registra `Ana@x.com` y otra persona se registra con `ana@x.com`
+- **THEN** ambas cuentas se crean y cada una inicia sesión solo con su email exacto
+
 #### Scenario: Datos de acceso mal formados
 
 - **WHEN** falta el `email` o la `password`, o el `email` no es una dirección válida
@@ -81,9 +87,10 @@ El sistema SHALL devolver los datos del usuario autenticado en `GET /api/v1/acco
 
 #### Scenario: Iniciales del usuario
 
-- **WHEN** el usuario tiene un nombre de al menos dos palabras
-- **THEN** `initials` son las primeras letras de la primera y la última palabra en mayúsculas
-- **AND** cuando el usuario no tiene nombre, `initials` son las dos primeras letras del email en mayúsculas
+- **WHEN** el usuario tiene un nombre con al menos dos palabras separadas por un espacio
+- **THEN** `initials` son las primeras letras de la primera y la segunda palabra en mayúsculas (`Ada Byron Lovelace` da `AB`)
+- **AND** cuando el usuario no tiene nombre, `initials` son la primera letra de la parte local del email y la primera del dominio en mayúsculas (`manu@gmail.com` da `MG`)
+- **AND** cuando el nombre es una sola palabra, `initials` son sus dos primeras letras en mayúsculas (`Ada` da `AD`)
 
 #### Scenario: Sin token
 
@@ -117,12 +124,17 @@ El sistema SHALL revocar el token usado en la petición cuando se llama a `POST 
 
 ### Requirement: Formato de las respuestas de la API de acceso
 
-El sistema SHALL responder siempre en JSON en las rutas de acceso, envolviendo las respuestas correctas en una propiedad `data`.
+El sistema SHALL responder siempre en JSON en las rutas de acceso, envolviendo en una propiedad `data` las respuestas de registro, inicio de sesión y perfil. La respuesta del cierre de sesión es la excepción: no lleva envoltorio.
 
 #### Scenario: Petición sin cabecera Accept de JSON
 
 - **WHEN** se llama a cualquier ruta de acceso sin indicar que se espera JSON
 - **THEN** la respuesta, correcta o de error, tiene formato JSON
+
+#### Scenario: Cierre de sesión sin envoltorio
+
+- **WHEN** el cierre de sesión se completa
+- **THEN** el cuerpo es `{ "message": "Logged out successfully" }`, sin propiedad `data`
 
 ### Requirement: Pantalla de registro
 
@@ -187,7 +199,8 @@ El sistema SHALL ofrecer una pantalla de inicio de sesión en `/login` con los c
 #### Scenario: Error nuevo tras un envío anterior fallido
 
 - **WHEN** la persona reenvía el formulario
-- **THEN** los avisos del intento anterior desaparecen mientras se procesa el nuevo envío
+- **THEN** el aviso del intento anterior y los errores bajo cada campo desaparecen mientras se procesa el nuevo envío
+- **AND** el aviso de sesión perdida, si lo había, permanece hasta que se inicie sesión correctamente
 
 #### Scenario: Ir al registro
 
@@ -206,13 +219,13 @@ El sistema SHALL mostrar en `/profile` al usuario con sesión sus iniciales, su 
 #### Scenario: Cerrar sesión
 
 - **WHEN** la persona pulsa «Cerrar sesión»
-- **THEN** el botón pasa a mostrar «Cerrando sesión…» y queda deshabilitado
-- **AND** se muestra la pantalla de inicio de sesión sin ningún aviso de error
+- **THEN** se muestra la pantalla de inicio de sesión sin ningún aviso de error
 
 #### Scenario: Cerrar sesión con el servidor caído
 
 - **WHEN** la persona pulsa «Cerrar sesión» y el servidor no responde o rechaza el token
-- **THEN** igualmente queda sin sesión en la aplicación y se muestra la pantalla de inicio de sesión
+- **THEN** igualmente queda sin sesión en la aplicación y se muestra la pantalla de inicio de sesión, sin ningún aviso
+- **AND** el token no se revoca en el servidor, por lo que sigue siendo válido allí
 
 ### Requirement: Protección de pantallas según la sesión
 
@@ -253,11 +266,16 @@ El sistema SHALL conservar la sesión del navegador al recargar la página o cer
 - **THEN** la sesión se descarta definitivamente
 - **AND** la persona ve la pantalla de inicio de sesión con el aviso «Tu sesión ha caducado. Vuelve a iniciar sesión.»
 
-#### Scenario: Servidor inaccesible al restaurar
+#### Scenario: Servidor inaccesible o con error al restaurar
 
-- **WHEN** la aplicación se carga con una sesión guardada y el servidor no responde
+- **WHEN** la aplicación se carga con una sesión guardada y el servidor no responde o responde con un error distinto de 401
 - **THEN** la persona ve la pantalla de inicio de sesión con un aviso que explica el fallo
 - **AND** la sesión guardada se conserva, de modo que al recargar con el servidor disponible vuelve a su perfil
+
+#### Scenario: El token no caduca por tiempo
+
+- **WHEN** pasa tiempo sin que se cierre sesión
+- **THEN** el token sigue siendo válido hasta que se revoque con el cierre de sesión
 
 #### Scenario: Aviso de sesión perdida al volver a entrar
 
