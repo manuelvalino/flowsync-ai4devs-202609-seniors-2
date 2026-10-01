@@ -149,7 +149,7 @@ El sistema SHALL ofrecer una pantalla de registro en `/register` con los campos 
 
 - **WHEN** una persona sin sesión rellena email, contraseña y confirmación válidos y pulsa «Crear cuenta»
 - **THEN** el botón muestra «Creando cuenta…» mientras espera
-- **AND** al terminar queda con la sesión iniciada y se muestra su pantalla de perfil
+- **AND** al terminar queda con la sesión iniciada y se muestra la lista de tareas
 
 #### Scenario: Nombre en blanco
 
@@ -184,7 +184,7 @@ El sistema SHALL ofrecer una pantalla de inicio de sesión en `/login` con los c
 
 - **WHEN** una persona sin sesión introduce credenciales correctas y pulsa «Entrar»
 - **THEN** el botón muestra «Entrando…» mientras espera
-- **AND** al terminar queda con la sesión iniciada y se muestra su pantalla de perfil
+- **AND** al terminar queda con la sesión iniciada y se muestra la lista de tareas
 
 #### Scenario: Credenciales incorrectas
 
@@ -219,12 +219,17 @@ El sistema SHALL ofrecer una pantalla de inicio de sesión en `/login` con los c
 
 ### Requirement: Pantalla de perfil
 
-El sistema SHALL mostrar en `/profile` al usuario con sesión sus iniciales, su nombre (o «Sin nombre»), su email, la fecha «Miembro desde» en formato largo en castellano y un botón «Cerrar sesión».
+El sistema SHALL mostrar en `/profile` al usuario con sesión sus iniciales, su nombre (o «Sin nombre»), su email, la fecha «Miembro desde» en formato largo en castellano y un botón «Cerrar sesión» y un enlace «Tareas» hacia la lista de tareas.
 
 #### Scenario: Visualización del perfil
 
 - **WHEN** una persona con sesión abre `/profile`
 - **THEN** ve sus iniciales, su nombre completo o «Sin nombre», su email y la fecha de creación de su cuenta
+
+#### Scenario: Ir a la lista
+
+- **WHEN** la persona pulsa «Tareas»
+- **THEN** se muestra la lista de tareas
 
 #### Scenario: Cerrar sesión
 
@@ -239,22 +244,27 @@ El sistema SHALL mostrar en `/profile` al usuario con sesión sus iniciales, su 
 
 ### Requirement: Protección de pantallas según la sesión
 
-El sistema SHALL mostrar el perfil solo a quien tiene sesión, y SHALL mostrar el registro y el inicio de sesión solo a quien no la tiene.
+El sistema SHALL mostrar el perfil y la lista de tareas solo a quien tiene sesión, y SHALL mostrar el registro y el inicio de sesión solo a quien no la tiene.
 
 #### Scenario: Perfil sin sesión
 
 - **WHEN** una persona sin sesión abre `/profile`
 - **THEN** es llevada a la pantalla de inicio de sesión
 
+#### Scenario: Lista de tareas sin sesión
+
+- **WHEN** una persona sin sesión abre `/tasks`
+- **THEN** es llevada a la pantalla de inicio de sesión
+
 #### Scenario: Acceso con sesión
 
 - **WHEN** una persona con sesión abre `/login` o `/register`
-- **THEN** es llevada a su perfil
+- **THEN** es llevada a la lista de tareas
 
 #### Scenario: Dirección desconocida
 
 - **WHEN** una persona abre una dirección que no existe
-- **THEN** es llevada a `/profile`, y de ahí a la pantalla de inicio de sesión si no tiene sesión
+- **THEN** es llevada a la lista de tareas, y de ahí a la pantalla de inicio de sesión si no tiene sesión
 
 #### Scenario: Indicador de carga al restaurar la sesión
 
@@ -268,7 +278,7 @@ El sistema SHALL conservar la sesión del navegador al recargar la página o cer
 #### Scenario: Recarga con sesión válida
 
 - **WHEN** una persona con sesión recarga la página
-- **THEN** permanece en la pantalla de perfil sin volver a introducir sus credenciales
+- **THEN** permanece en la pantalla en la que estaba, sea el perfil o la lista de tareas, sin volver a introducir sus credenciales
 
 #### Scenario: Token rechazado por el servidor
 
@@ -280,7 +290,7 @@ El sistema SHALL conservar la sesión del navegador al recargar la página o cer
 
 - **WHEN** la aplicación se carga con una sesión guardada y el servidor no responde o responde con un error distinto de 401
 - **THEN** la persona ve la pantalla de inicio de sesión con un aviso que explica el fallo
-- **AND** la sesión guardada se conserva, de modo que al recargar con el servidor disponible vuelve a su perfil
+- **AND** la sesión guardada se conserva, de modo que al recargar con el servidor disponible vuelve a la lista de tareas
 
 #### Scenario: El token no caduca por tiempo
 
