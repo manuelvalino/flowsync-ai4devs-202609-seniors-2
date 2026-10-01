@@ -39,8 +39,8 @@ El sistema SHALL permitir crear una cuenta con `POST /api/v1/auth/signup` a part
 #### Scenario: Confirmación distinta
 
 - **WHEN** `passwordConfirmation` no coincide con `password`
-- **THEN** la respuesta es 422 con un error sobre el campo `passwordConfirmation`
-- **AND** si además la confirmación tiene menos de 8 caracteres, también hay un error de longitud sobre ese campo
+- **THEN** la respuesta es 422 con un único error sobre el campo `passwordConfirmation`
+- **AND** ese error es de longitud si la confirmación tiene menos de 8 caracteres y de falta de coincidencia en caso contrario
 
 #### Scenario: Email mal formado o demasiado largo
 
@@ -78,7 +78,7 @@ El sistema SHALL permitir iniciar sesión con `POST /api/v1/auth/login` mediante
 
 #### Scenario: Datos de acceso mal formados
 
-- **WHEN** falta el `email` o la `password` (o viene vacía), o el `email` no es una dirección válida
+- **WHEN** falta el `email` o la `password` (o viene vacía), o el `email` no es una dirección válida o supera los 254 caracteres
 - **THEN** la respuesta es 422 con un error por cada campo afectado
 
 ### Requirement: Consulta del perfil propio por API
@@ -92,7 +92,7 @@ El sistema SHALL devolver los datos del usuario autenticado en `GET /api/v1/acco
 
 #### Scenario: Iniciales del usuario
 
-- **WHEN** el usuario tiene un nombre con al menos dos palabras separadas por un espacio
+- **WHEN** el usuario tiene un nombre con al menos dos palabras separadas por un único espacio
 - **THEN** `initials` son las primeras letras de la primera y la segunda palabra en mayúsculas (`Ada Byron Lovelace` da `AB`)
 - **AND** cuando el usuario no tiene nombre, `initials` son la primera letra de la parte local del email y la primera del dominio en mayúsculas (`manu@gmail.com` da `MG`)
 - **AND** cuando el nombre es una sola palabra, `initials` son sus dos primeras letras en mayúsculas (`Ada` da `AD`)
@@ -233,9 +233,9 @@ El sistema SHALL mostrar en `/profile` al usuario con sesión sus iniciales, su 
 
 #### Scenario: Cerrar sesión con el servidor caído
 
-- **WHEN** la persona pulsa «Cerrar sesión» y el servidor no responde o rechaza el token
+- **WHEN** la persona pulsa «Cerrar sesión» y el servidor no responde o responde con error
 - **THEN** igualmente queda sin sesión en la aplicación y se muestra la pantalla de inicio de sesión, sin ningún aviso
-- **AND** el token no se revoca en el servidor, por lo que sigue siendo válido allí
+- **AND** si el servidor no llegó a procesar la petición, el token no se revoca y sigue siendo válido allí
 
 ### Requirement: Protección de pantallas según la sesión
 
