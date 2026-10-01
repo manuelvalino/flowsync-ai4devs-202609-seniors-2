@@ -2,7 +2,7 @@
 
 ## Why
 
-FlowSync todavía no tiene su función central: no hay forma de apuntar una tarea ni de ver en qué anda cada miembro del equipo. Tras la capability de cuentas y acceso (`auth`), lo siguiente es una lista única y compartida donde cualquiera crea tareas con solo el título y cambia su estado desde la propia fila. Cubre las historias E3-1, E2-1, E2-2, E2-3 y E2-4 del backlog.
+FlowSync todavía no tiene su función central: no hay forma de apuntar una tarea ni de ver en qué anda cada miembro del equipo. Tras la capability de cuentas y acceso (`auth`), lo siguiente es una lista única y compartida donde cualquiera crea tareas con solo el título y cambia su estado desde la propia fila. Cubre las historias E3-1, E2-1, E2-2, E2-3 y E2-4 del backlog y, de forma parcial, la parte de API de E2-7 (reasignar responsable: sin interfaz y sin endpoint de equipo, por lo que no cubre «todas las personas registradas» como destino elegible desde pantalla).
 
 ## What Changes
 

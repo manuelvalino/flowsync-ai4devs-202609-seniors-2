@@ -131,3 +131,34 @@ El sistema SHALL mostrar el perfil y la lista de tareas solo a quien tiene sesi�
 
 - **WHEN** la aplicación se carga con una sesión guardada y aún no ha confirmado con el servidor que sigue siendo válida
 - **THEN** se muestra un indicador de carga y no se redirige a ninguna pantalla hasta confirmarlo
+
+### Requirement: Persistencia de la sesión entre cargas
+
+El sistema SHALL conservar la sesión del navegador al recargar la página o cerrar y reabrir la pestaña, siempre que el servidor siga reconociendo el token guardado.
+
+#### Scenario: Recarga con sesión válida
+
+- **WHEN** una persona con sesión recarga la página
+- **THEN** permanece en la pantalla en la que estaba, sea el perfil o la lista de tareas, sin volver a introducir sus credenciales
+
+#### Scenario: Token rechazado por el servidor
+
+- **WHEN** la aplicación se carga con una sesión guardada que el servidor rechaza con 401
+- **THEN** la sesión se descarta definitivamente
+- **AND** la persona ve la pantalla de inicio de sesión con el aviso «Tu sesión ha caducado. Vuelve a iniciar sesión.»
+
+#### Scenario: Servidor inaccesible o con error al restaurar
+
+- **WHEN** la aplicación se carga con una sesión guardada y el servidor no responde o responde con un error distinto de 401
+- **THEN** la persona ve la pantalla de inicio de sesión con un aviso que explica el fallo
+- **AND** la sesión guardada se conserva, de modo que al recargar con el servidor disponible vuelve a la lista de tareas
+
+#### Scenario: El token no caduca por tiempo
+
+- **WHEN** pasa tiempo sin que se cierre sesión
+- **THEN** el token sigue siendo válido hasta que se revoque con el cierre de sesión
+
+#### Scenario: Aviso de sesión perdida al volver a entrar
+
+- **WHEN** la persona inicia sesión correctamente tras ver un aviso de sesión perdida
+- **THEN** el aviso desaparece

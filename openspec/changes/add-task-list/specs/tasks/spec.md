@@ -76,7 +76,7 @@ El sistema SHALL crear una tarea con `POST /api/v1/tasks` a partir únicamente d
 #### Scenario: Título vacío o en blanco
 
 - **WHEN** el `title` está vacío o contiene solo espacios
-- **THEN** la respuesta es 422 con un error sobre el campo `title`, igual que si faltara, y no se crea ninguna tarea
+- **THEN** la respuesta es 422 con un error sobre el campo `title` y no se crea ninguna tarea
 
 #### Scenario: Sin sesión
 
@@ -131,6 +131,16 @@ El sistema SHALL actualizar una tarea con `PATCH /api/v1/tasks/:id`, admitiendo 
 - **WHEN** una persona con sesión envía como `assigneeId` el id de una cuenta existente
 - **THEN** la tarea queda con esa persona como responsable, sea quien sea quien la tenía
 
+#### Scenario: Reasignar a quien ya la lleva
+
+- **WHEN** se envía como `assigneeId` el de quien ya es el responsable
+- **THEN** la respuesta es satisfactoria y la tarea no cambia
+
+#### Scenario: Tarea sin responsable
+
+- **WHEN** se envía `assigneeId` o `status` con valor `null`, o `assigneeId` que no es un entero positivo
+- **THEN** la respuesta es 422 con un error sobre ese campo y la tarea no cambia, de modo que ninguna tarea queda sin responsable ni sin estado
+
 #### Scenario: Responsable inexistente
 
 - **WHEN** se envía un `assigneeId` que no corresponde a ninguna cuenta
@@ -177,7 +187,7 @@ El sistema SHALL ofrecer en `/tasks` una única lista con todas las tareas del e
 
 #### Scenario: Responsable sin nombre
 
-- **WHEN** el responsable de una tarea no tiene nombre
+- **WHEN** el responsable de una tarea no tiene nombre, o su nombre está vacío o en blanco
 - **THEN** la fila muestra «Sin nombre» y nunca su correo ni su identificador
 
 #### Scenario: Sin fechas
@@ -223,7 +233,7 @@ El sistema SHALL permitir crear una tarea desde la lista pidiendo únicamente el
 #### Scenario: Crear una tarea
 
 - **WHEN** la persona escribe un título y pulsa «Crear tarea»
-- **THEN** la tarea aparece en la lista sin recargar la página, en estado Pendiente y con su propio nombre como responsable
+- **THEN** la tarea aparece en la lista sin recargar la página (su posición no está garantizada), en estado Pendiente y con su propio nombre como responsable
 - **AND** el campo del título queda vacío para poder anotar otra
 
 #### Scenario: Solo se pide el título
@@ -239,7 +249,7 @@ El sistema SHALL permitir crear una tarea desde la lista pidiendo únicamente el
 
 #### Scenario: Título demasiado largo
 
-- **WHEN** el servidor rechaza el título por su longitud
+- **WHEN** el servidor rechaza el título por su longitud, si en algún momento se fija un límite
 - **THEN** se muestra junto al campo un mensaje que avisa de que se pasa de largo, y no se crea ninguna tarea
 
 #### Scenario: Error al crear
@@ -254,7 +264,13 @@ El sistema SHALL permitir cambiar el estado de cualquier tarea desde su propia f
 #### Scenario: Cambiar el estado
 
 - **WHEN** la persona elige otro estado en la fila de una tarea
-- **THEN** la fila refleja el nuevo estado sin abrir la tarea, sin diálogo de confirmación y sin rellenar ningún campo
+- **THEN** la fila refleja el nuevo estado en cuanto el servidor lo confirma, sin abrir la tarea, sin diálogo de confirmación y sin rellenar ningún campo
+- **AND** mientras el cambio se guarda, los botones de esa fila no admiten otro cambio
+
+#### Scenario: Elegir el estado actual
+
+- **WHEN** la persona pulsa el estado en el que ya está la tarea
+- **THEN** no ocurre ningún cambio
 
 #### Scenario: Tarea de otra persona
 
