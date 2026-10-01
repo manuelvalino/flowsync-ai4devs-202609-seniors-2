@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { useAuth } from '@/auth/use-auth'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,7 +58,13 @@ export function ProfilePage() {
           </dl>
         </CardContent>
 
-        <CardFooter>
+        <CardFooter className="grid gap-3">
+          <Link
+            to="/tasks"
+            className="text-foreground text-center text-sm font-medium underline"
+          >
+            Tareas
+          </Link>
           <Button
             variant="outline"
             className="w-full"
