@@ -35,6 +35,14 @@ export function TaskPage() {
 
     let cancelled = false
 
+    // Otra tarea u otra sesión: nada de lo anterior debe verse ni editarse.
+    setTask(null)
+    setNotFound(false)
+    setLoadError(null)
+    setDraft('')
+    setDateError(null)
+    setActionError(null)
+
     api
       .getTask(token, id)
       .then((loaded) => {
@@ -85,7 +93,14 @@ export function TaskPage() {
     setDraft(value)
     // Un campo incompleto entrega cadena vacía: no se guarda nada, para que una
     // fecha a medias nunca borre la guardada. Quitarla es la acción explícita.
-    if (value === '' || value === task.dueDate) return
+    // Al teclear el año Chrome entrega fechas válidas intermedias (0002-…, 0020-…):
+    // solo se guarda con un año de cuatro cifras.
+    if (
+      value === '' ||
+      value === task.dueDate ||
+      Number(value.slice(0, 4)) < 1000
+    )
+      return
     void save(task, value)
   }
 
@@ -145,7 +160,7 @@ export function TaskPage() {
                     name="dueDate"
                     type="date"
                     value={draft}
-                    disabled={isSaving}
+                    readOnly={isSaving}
                     onChange={(event) => handleDateChange(event.target.value)}
                     aria-invalid={Boolean(dateError)}
                     aria-describedby={dateError ? 'dueDate-error' : undefined}
