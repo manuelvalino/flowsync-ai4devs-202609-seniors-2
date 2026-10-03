@@ -64,6 +64,25 @@ La API SHALL rechazar con un 422 toda petición de registro cuyos datos no cumpl
 - **WHEN** se envía un registro sin la clave `fullName` en el cuerpo
 - **THEN** la respuesta es 422 con un error sobre `fullName` de regla `required`
 
+### Requirement: Campos vacíos equivalen a nulos
+
+La API SHALL tratar como `null` cualquier campo enviado como cadena vacía en el registro y en el login, antes de validarlo: un campo obligatorio vacío SHALL rechazarse como ausente y no por su formato o su longitud.
+
+#### Scenario: Email vacío en el registro
+
+- **WHEN** se envía un registro con `email` igual a `""`
+- **THEN** la respuesta es 422 con un error sobre `email` de regla `required`
+
+#### Scenario: Nombre vacío en el registro
+
+- **WHEN** se envía un registro con `fullName` igual a `""` y el resto de campos válidos
+- **THEN** la cuenta se crea y el `user` devuelto tiene `fullName` a `null`
+
+#### Scenario: Contraseña vacía en el login
+
+- **WHEN** se envía un login con `password` igual a `""`
+- **THEN** la respuesta es 422 con un error sobre `password` de regla `required`, sin comprobar las credenciales
+
 ### Requirement: Inicio de sesión por API
 
 La API SHALL permitir, sin autenticación previa, intercambiar un email y una contraseña correctos por un token de acceso nuevo, devolviendo el usuario y el token envueltos en `data`.
@@ -117,7 +136,22 @@ La API SHALL devolver, a quien presente un token de acceso válido como `Authori
 
 ### Requirement: Iniciales del usuario
 
-La API SHALL incluir en cada usuario devuelto un campo `initials` en mayúsculas, calculado así: si hay nombre, a partir de sus dos primeras palabras separadas por espacio (inicial de cada una) o, si solo tiene una, de sus dos primeras letras; si no hay nombre, aplicando la misma regla a la parte del email anterior y posterior a la arroba.
+La API SHALL incluir en cada usuario devuelto un campo `initials`, en mayúsculas, calculado así. Si la cuenta tiene nombre, se trocea por cada carácter de espacio; si no lo tiene, el email se trocea por la arroba. Si los dos primeros trozos son no vacíos, `initials` es el primer carácter de cada uno; si no, son los dos primeros caracteres del primer trozo, o menos si el trozo es más corto. El nombre no se recorta antes de trocearlo.
+
+#### Scenario: Nombre separado por más de un espacio
+
+- **WHEN** la cuenta tiene `fullName` "Ada  Lovelace", con dos espacios entre las palabras
+- **THEN** `initials` vale "AD", porque el segundo trozo está vacío
+
+#### Scenario: Nombre de un solo carácter
+
+- **WHEN** la cuenta tiene `fullName` "A"
+- **THEN** `initials` vale "A"
+
+#### Scenario: Nombre que empieza por espacio
+
+- **WHEN** la cuenta tiene `fullName` " Ada", creada directamente por API
+- **THEN** `initials` es una cadena vacía
 
 #### Scenario: Nombre de dos o más palabras
 
@@ -238,19 +272,29 @@ La aplicación web SHALL ofrecer una pantalla "Inicia sesión" con los campos "E
 - **WHEN** una persona introduce un email sin formato válido y pulsa "Entrar"
 - **THEN** bajo el campo Email aparece "Introduce una dirección de email válida."
 
-### Requirement: Mensajes de error de conexión y de servidor
+#### Scenario: Contraseña vacía desde la web
 
-La aplicación web SHALL mostrar en el aviso general del formulario un mensaje en castellano cuando el servidor no responde o falla, en lugar de dejar el formulario sin respuesta.
+- **WHEN** una persona escribe su email, deja la contraseña vacía y pulsa "Entrar"
+- **THEN** el formulario se envía igualmente al servidor y bajo el campo Contraseña aparece "Falta rellenar la contraseña."
+
+### Requirement: Traducción de los errores del servidor en los formularios
+
+La aplicación web SHALL traducir la respuesta de error del servidor a un mensaje en castellano en el aviso general de los formularios de login y de registro, siguiendo estas reglas: una respuesta 400 muestra "El email o la contraseña no son correctos.", sea cual sea su causa y en cualquiera de los dos formularios; una respuesta 422 con errores por campo muestra cada error bajo su campo; un fallo de conexión muestra un aviso de conexión; y cualquier otra respuesta de error distinta de 401, incluido un 422 sin errores por campo, muestra un aviso genérico de fallo del servidor. Nunca SHALL dejar el formulario sin respuesta.
 
 #### Scenario: Backend apagado
 
 - **WHEN** una persona envía el formulario de login o de registro y el servidor no está accesible
 - **THEN** aparece el aviso "No se pudo conectar con el servidor. Comprueba que el backend está arrancado."
 
-#### Scenario: Error interno del servidor
+#### Scenario: Error inesperado del servidor
 
-- **WHEN** el servidor responde con un error 5xx a un envío de formulario
+- **WHEN** el servidor responde a un envío de formulario con un error distinto de 400, 401 y 422, por ejemplo 404, 429 o 5xx
 - **THEN** aparece el aviso "Algo ha ido mal en el servidor. Inténtalo de nuevo en un momento."
+
+#### Scenario: Un 400 en el registro se presenta como credenciales incorrectas
+
+- **WHEN** el servidor responde 400 a un envío del formulario de registro
+- **THEN** aparece el aviso "El email o la contraseña no son correctos.", igual que en el login
 
 ### Requirement: Persistencia de la sesión en el navegador
 
