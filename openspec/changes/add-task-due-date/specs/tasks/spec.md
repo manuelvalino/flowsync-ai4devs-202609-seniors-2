@@ -1,10 +1,6 @@
-# tasks Specification
+# Spec Delta
 
-## Purpose
-
-Lista única y compartida de tareas del equipo: cualquier miembro con sesión las ve todas, crea una con solo el título y cambia su estado desde la propia lista.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Listado de tareas por API
 
@@ -82,29 +78,6 @@ El sistema SHALL crear una tarea con `POST /api/v1/tasks` a partir de `title` y,
 
 - **WHEN** se intenta crear una tarea sin token o con un token inválido
 - **THEN** la respuesta es 401 y no se crea ninguna tarea
-
-### Requirement: Título largo sin recorte silencioso
-
-El sistema SHALL NOT guardar una versión recortada de un título sin avisar de ello.
-
-#### Scenario: Título muy largo
-
-- **WHEN** se envía un `title` más largo de lo que el sistema admite
-- **THEN** o bien la tarea se crea con el título completo, o bien la respuesta es 422 con un error sobre `title`; en ningún caso se guarda una versión recortada con respuesta satisfactoria
-
-### Requirement: Estados cerrados de una tarea
-
-El sistema SHALL permitir únicamente los estados `pending`, `in_progress` y `done`, sin ninguna forma de añadir, renombrar o eliminar estados, y SHALL rechazar con 422 cualquier otro valor.
-
-#### Scenario: Valor de estado desconocido
-
-- **WHEN** se actualiza una tarea con un `status` distinto de `pending`, `in_progress` o `done`, por ejemplo `Hecho`
-- **THEN** la respuesta es 422 con un error sobre el campo `status` y la tarea no cambia
-
-#### Scenario: Una tarea siempre tiene un estado
-
-- **WHEN** se consulta cualquier tarea en cualquier momento
-- **THEN** su `status` es exactamente uno de los tres valores
 
 ### Requirement: Actualización de tareas por API
 
@@ -231,72 +204,8 @@ El sistema SHALL ofrecer en `/tasks` una única lista con todas las tareas del e
 - **WHEN** una persona sin sesión abre `/tasks`
 - **THEN** es llevada a la pantalla de inicio de sesión y no ve ninguna tarea
 
-### Requirement: Creación de tareas desde la pantalla
+## ADDED Requirements
 
-El sistema SHALL permitir crear una tarea desde la lista pidiendo únicamente el título, con un botón «Crear tarea», y SHALL mostrar la tarea nueva en la lista sin recargar ni navegar.
-
-#### Scenario: Crear una tarea
-
-- **WHEN** la persona escribe un título y pulsa «Crear tarea»
-- **THEN** la tarea aparece en la lista sin recargar la página (su posición no está garantizada), en estado Pendiente y con su propio nombre como responsable
-- **AND** el campo del título queda vacío para poder anotar otra
-
-#### Scenario: Solo se pide el título
-
-- **WHEN** la persona recorre el flujo de creación
-- **THEN** el título es lo único que se le pide
-- **AND** no se le ofrece ni sugiere indicar responsable, estado ni fecha
-
-#### Scenario: Título vacío o en blanco
-
-- **WHEN** la persona intenta crear una tarea con el título vacío o solo con espacios
-- **THEN** no se crea ninguna tarea y se muestra junto al campo un mensaje en castellano que explica que falta el título, como «Falta rellenar el título.»
-
-#### Scenario: Título demasiado largo
-
-- **WHEN** el servidor rechaza el título por su longitud, si en algún momento se fija un límite
-- **THEN** se muestra junto al campo un mensaje que avisa de que se pasa de largo, y no se crea ninguna tarea
-
-#### Scenario: Error al crear
-
-- **WHEN** no se puede crear la tarea porque el servidor no responde o responde con un error inesperado
-- **THEN** se muestra un aviso en castellano y el título escrito se conserva
-
-### Requirement: Cambio de estado desde la lista
-
-El sistema SHALL permitir cambiar el estado de cualquier tarea desde su propia fila, con un solo gesto, ofreciendo como únicos destinos Pendiente, En curso y Hecho.
-
-#### Scenario: Cambiar el estado
-
-- **WHEN** la persona elige otro estado en la fila de una tarea
-- **THEN** la fila refleja el nuevo estado en cuanto el servidor lo confirma, sin abrir la tarea, sin diálogo de confirmación y sin rellenar ningún campo
-- **AND** mientras el cambio se guarda, los botones de esa fila no admiten otro cambio
-
-#### Scenario: Elegir el estado actual
-
-- **WHEN** la persona pulsa el estado en el que ya está la tarea
-- **THEN** no ocurre ningún cambio
-
-#### Scenario: Tarea de otra persona
-
-- **WHEN** la persona cambia el estado de una tarea cuyo responsable es otra
-- **THEN** el cambio se aplica igual que en una tarea propia, sin permiso especial ni advertencia
-
-#### Scenario: Solo tres destinos
-
-- **WHEN** la persona mira a qué puede cambiar una tarea
-- **THEN** los únicos destinos ofrecidos son Pendiente, En curso y Hecho
-- **AND** al terminar la tarea está en exactamente uno de ellos
-
-#### Scenario: El cambio falla
-
-- **WHEN** no se puede guardar el cambio porque el servidor no responde o responde con un error
-- **THEN** se muestra un aviso en castellano y la fila conserva el estado anterior
-
-#### Scenario: Cambiar el responsable
-
-- **WHEN** la persona recorre la pantalla
-- **THEN** no se le ofrece cambiar el responsable de ninguna tarea
 ### Requirement: Lectura individual de una tarea por API
 
 El sistema SHALL devolver una tarea en `GET /api/v1/tasks/:id` a cualquier persona con un token de acceso válido, con la misma representación que en el listado.

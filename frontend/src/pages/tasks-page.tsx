@@ -186,7 +186,12 @@ export function TasksPage() {
                       className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_auto] sm:items-center"
                     >
                       <div className="min-w-0">
-                        <p className="truncate font-medium">{task.title}</p>
+                        <Link
+                          to={`/tasks/${task.id}`}
+                          className="block truncate font-medium hover:underline"
+                        >
+                          {task.title}
+                        </Link>
                         <p className="text-muted-foreground truncate text-sm">
                           {task.assignee.fullName?.trim() || 'Sin nombre'}
                         </p>
