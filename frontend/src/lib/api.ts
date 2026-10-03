@@ -43,6 +43,8 @@ const FIELD_LABELS: Record<string, string> = {
   password: 'la contraseña',
   passwordConfirmation: 'la confirmación de la contraseña',
   title: 'el título',
+  dueDate: 'la fecha de vencimiento',
+  today: 'el día',
 }
 
 const label = (field?: string) => FIELD_LABELS[field ?? ''] ?? 'el campo'
@@ -175,14 +177,32 @@ export function logout(token: string): Promise<void> {
   )
 }
 
+/** Día de calendario del dispositivo (`AAAA-MM-DD`), con la fecha local y no la UTC. */
+function localToday(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${now.getFullYear()}-${month}-${day}`
+}
+
+/** Ruta de tareas con el día de la persona, que el servidor usa para decidir si está vencida. */
+const tasksPath = (suffix = '') =>
+  `/api/v1/tasks${suffix}?today=${localToday()}`
+
 export function listTasks(token: string): Promise<Task[]> {
-  return request<{ data: Task[] }>('/api/v1/tasks', { token }).then(
+  return request<{ data: Task[] }>(tasksPath(), { token }).then(
     (response) => response.data,
   )
 }
 
+export function getTask(token: string, id: string): Promise<Task> {
+  return request<{ data: Task }>(tasksPath(`/${encodeURIComponent(id)}`), {
+    token,
+  }).then((response) => response.data)
+}
+
 export function createTask(token: string, title: string): Promise<Task> {
-  return request<{ data: Task }>('/api/v1/tasks', {
+  return request<{ data: Task }>(tasksPath(), {
     method: 'POST',
     body: { title },
     token,
@@ -194,9 +214,22 @@ export function updateTaskStatus(
   id: number,
   status: TaskStatus,
 ): Promise<Task> {
-  return request<{ data: Task }>(`/api/v1/tasks/${id}`, {
+  return request<{ data: Task }>(tasksPath(`/${id}`), {
     method: 'PATCH',
     body: { status },
+    token,
+  }).then((response) => response.data)
+}
+
+/** `dueDate` en `null` quita la fecha de vencimiento. */
+export function updateTaskDueDate(
+  token: string,
+  id: number,
+  dueDate: string | null,
+): Promise<Task> {
+  return request<{ data: Task }>(tasksPath(`/${id}`), {
+    method: 'PATCH',
+    body: { dueDate },
     token,
   }).then((response) => response.data)
 }
