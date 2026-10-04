@@ -226,17 +226,17 @@ La API SHALL responder en JSON a todas las peticiones de cuenta, incluidos los e
 
 ### Requirement: Pantalla de registro
 
-La aplicación web SHALL ofrecer una pantalla "Crea tu cuenta" con los campos "Nombre completo (opcional)", "Email", "Contraseña" (con la ayuda "Entre 8 y 32 caracteres.") y "Repite la contraseña", un botón "Crear cuenta" y un enlace "Inicia sesión" que lleva a la pantalla de login. Al registrarse con éxito SHALL dejar a la persona con la sesión iniciada en su perfil.
+La aplicación web SHALL ofrecer una pantalla "Crea tu cuenta" con los campos "Nombre completo (opcional)", "Email", "Contraseña" (con la ayuda "Entre 8 y 32 caracteres.") y "Repite la contraseña", un botón "Crear cuenta" y un enlace "Inicia sesión" que lleva a la pantalla de login. Al registrarse con éxito SHALL dejar a la persona con la sesión iniciada en la lista de tareas.
 
 #### Scenario: Registro correcto desde la web
 
 - **WHEN** una persona rellena el formulario con datos válidos y pulsa "Crear cuenta"
-- **THEN** el botón pasa a mostrar "Creando cuenta…" y queda deshabilitado mientras se envía, y al terminar la persona ve su perfil con la sesión iniciada
+- **THEN** el botón pasa a mostrar "Creando cuenta…" y queda deshabilitado mientras se envía, y al terminar la persona ve la lista de tareas con la sesión iniciada
 
 #### Scenario: Nombre en blanco
 
 - **WHEN** una persona deja el nombre vacío o solo con espacios y se registra
-- **THEN** la cuenta se crea sin nombre y el perfil muestra "Sin nombre"
+- **THEN** la cuenta se crea sin nombre y su perfil muestra "Sin nombre"
 
 #### Scenario: Contraseñas distintas detectadas sin ir al servidor
 
@@ -255,12 +255,12 @@ La aplicación web SHALL ofrecer una pantalla "Crea tu cuenta" con los campos "N
 
 ### Requirement: Pantalla de inicio de sesión
 
-La aplicación web SHALL ofrecer una pantalla "Inicia sesión" con los campos "Email" y "Contraseña", un botón "Entrar" y un enlace "Crea una" que lleva a la pantalla de registro. Al iniciar sesión con éxito SHALL llevar a la persona a su perfil.
+La aplicación web SHALL ofrecer una pantalla "Inicia sesión" con los campos "Email" y "Contraseña", un botón "Entrar" y un enlace "Crea una" que lleva a la pantalla de registro. Al iniciar sesión con éxito SHALL llevar a la persona a la lista de tareas.
 
 #### Scenario: Login correcto desde la web
 
 - **WHEN** una persona introduce credenciales correctas y pulsa "Entrar"
-- **THEN** el botón muestra "Entrando…" y queda deshabilitado mientras se envía, y al terminar la persona ve su perfil
+- **THEN** el botón muestra "Entrando…" y queda deshabilitado mientras se envía, y al terminar la persona ve la lista de tareas
 
 #### Scenario: Credenciales incorrectas desde la web
 
@@ -322,7 +322,7 @@ La aplicación web SHALL conservar la sesión entre recargas y cierres de pesta�
 
 ### Requirement: Protección de pantallas según la sesión
 
-La aplicación web SHALL permitir el acceso al perfil solo con sesión iniciada y SHALL impedir el acceso a login y registro con sesión iniciada. Cualquier otra dirección SHALL llevar al perfil.
+La aplicación web SHALL permitir el acceso al perfil y a la lista de tareas solo con sesión iniciada, y SHALL impedir el acceso a login y registro con sesión iniciada. Cualquier otra dirección SHALL llevar a la lista de tareas.
 
 #### Scenario: Perfil sin sesión
 
@@ -332,16 +332,16 @@ La aplicación web SHALL permitir el acceso al perfil solo con sesión iniciada 
 #### Scenario: Login o registro con sesión
 
 - **WHEN** una persona con sesión iniciada abre la pantalla de login o la de registro
-- **THEN** es redirigida a su perfil
+- **THEN** es redirigida a la lista de tareas
 
 #### Scenario: Dirección desconocida
 
 - **WHEN** una persona abre una dirección que no corresponde a ninguna pantalla
-- **THEN** es llevada al perfil si tiene sesión, o al login si no la tiene
+- **THEN** es llevada a la lista de tareas si tiene sesión, o al login si no la tiene
 
 ### Requirement: Pantalla de perfil
 
-La aplicación web SHALL mostrar en el perfil un círculo con las iniciales, el nombre completo (o "Sin nombre" si no tiene), el email y la fecha de alta como "Miembro desde" en formato largo en castellano, junto a un botón "Cerrar sesión".
+La aplicación web SHALL mostrar en el perfil un círculo con las iniciales, el nombre completo (o "Sin nombre" si no tiene), el email y la fecha de alta como "Miembro desde" en formato largo en castellano, junto a un botón "Cerrar sesión" y un enlace que lleva a la lista de tareas.
 
 #### Scenario: Perfil con nombre
 
@@ -352,6 +352,11 @@ La aplicación web SHALL mostrar en el perfil un círculo con las iniciales, el 
 
 - **WHEN** una persona registrada sin nombre abre su perfil
 - **THEN** ve "Sin nombre" como título y las iniciales calculadas a partir de su email
+
+#### Scenario: Volver a la lista desde el perfil
+
+- **WHEN** una persona pulsa en su perfil el enlace a la lista de tareas
+- **THEN** llega a la pantalla de tareas
 
 ### Requirement: Cierre de sesión desde la web
 
