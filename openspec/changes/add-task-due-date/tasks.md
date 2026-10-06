@@ -15,7 +15,7 @@
 - [x] 2.2 `TaskTransformer` recibe `today` en el constructor y añade `dueDate` (`toISODate()` o `null`) e `isOverdue` (`isOverdueOn(today)`). Verificar que `npm run typecheck` señala las llamadas que todavía no pasan el día.
 - [x] 2.3 En `TasksController`:
   - Un método privado que valide `X-Timezone` con `timezoneValidator` y devuelva `DateTime.now().setZone(tz ?? 'UTC').toISODate()`, que las cuatro acciones llaman antes de validar el cuerpo o tocar la base de datos.
-  - `store` guarda `dueDate` con `DateTime.fromJSDate`, o `null` si no llega.
+  - `store` guarda `dueDate` tal cual sale del validador (el transform global de `start/validator.ts` ya lo entrega como `DateTime`), o `null` si no llega.
   - `update` fusiona `status` y `assigneeId` como hasta ahora y asigna `dueDate` solo si la clave está en el payload (`null` quita la fecha).
   - Una acción `show` nueva: `findOrFail`, cargar `assignee` y serializar.
   - Todas las respuestas pasan el día a `TaskTransformer.transform(..., today)`.

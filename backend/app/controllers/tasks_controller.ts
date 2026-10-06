@@ -68,12 +68,13 @@ export default class TasksController {
 
   /**
    * Today's date (`YYYY-MM-DD`) in the time zone the client sends in
-   * `X-Timezone`, or in UTC when it sends none. An invalid zone fails with
-   * the usual 422 before anything is read or written.
+   * `X-Timezone`, or in UTC when it sends none. An empty header counts as
+   * none. An invalid zone fails with the usual 422 before anything is read
+   * or written.
    */
   private async referenceDay({ request }: HttpContext) {
     const { timezone } = await timezoneValidator.validate({
-      timezone: request.header('x-timezone'),
+      timezone: request.header('x-timezone') || undefined,
     })
     return DateTime.now()
       .setZone(timezone ?? 'UTC')

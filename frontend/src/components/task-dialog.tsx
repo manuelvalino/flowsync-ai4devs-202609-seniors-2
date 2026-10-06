@@ -55,9 +55,14 @@ export function TaskDialog({
   const inputRef = useRef<HTMLInputElement>(null)
   // La última versión guardada, para volver a ella si un guardado falla.
   const savedRef = useRef<Task | null>(null)
+  // La última fecha mandada (o la guardada, si no hay nada en vuelo): con ella
+  // se decide si hace falta guardar, no con la guardada.
+  const sentRef = useRef<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Solo la respuesta de la última petición actualiza la pantalla.
   const requestRef = useRef(0)
+  // La última petición, mientras no ha respondido: cerrar espera a que acabe.
+  const inFlightRef = useRef<Promise<boolean> | null>(null)
   // Quien abrió la tarea (el título de la fila). Radix devuelve el foco a su
   // `DialogTrigger`, y aquí no lo hay: el diálogo se abre desde cada fila.
   const [opener] = useState(() =>
@@ -74,6 +79,7 @@ export function TaskDialog({
       .then((data) => {
         if (ignore) return
         savedRef.current = data
+        sentRef.current = data.dueDate
         setTask(data)
         setInputValue(data.dueDate ?? '')
       })
@@ -98,46 +104,62 @@ export function TaskDialog({
     timerRef.current = null
   }
 
-  const save = async (dueDate: string | null) => {
-    if (!token) return
+  // Resuelve `true` si queda guardado. Si mientras tanto se ha vuelto a editar
+  // el campo (hay una espera en marcha), la respuesta no pisa lo escrito.
+  const save = (dueDate: string | null): Promise<boolean> => {
+    if (!token) return Promise.resolve(false)
 
     const request = ++requestRef.current
+    const isLatest = () => request === requestRef.current
+    sentRef.current = dueDate
     setSaveError(null)
     setFieldError(null)
 
-    try {
-      const updated = await updateTask(token, taskId, { dueDate })
-      onTaskChange(updated)
-      if (request !== requestRef.current) return
-      savedRef.current = updated
-      setTask(updated)
-      setInputValue(updated.dueDate ?? '')
-    } catch (error) {
-      if (request !== requestRef.current) return
-      setInputValue(savedRef.current?.dueDate ?? '')
-      const dueDateError =
-        error instanceof ApiError ? error.fieldErrors.dueDate : undefined
-      if (dueDateError) setFieldError(dueDateError)
-      else setSaveError(messageOf(error))
-    }
+    const promise = updateTask(token, taskId, { dueDate }).then(
+      (updated) => {
+        if (!isLatest()) return true
+        inFlightRef.current = null
+        savedRef.current = updated
+        sentRef.current = updated.dueDate
+        onTaskChange(updated)
+        setTask(updated)
+        if (!timerRef.current) setInputValue(updated.dueDate ?? '')
+        return true
+      },
+      (error: unknown) => {
+        if (!isLatest()) return false
+        inFlightRef.current = null
+        const saved = savedRef.current?.dueDate ?? null
+        sentRef.current = saved
+        if (!timerRef.current) setInputValue(saved ?? '')
+        const dueDateError =
+          error instanceof ApiError ? error.fieldErrors.dueDate : undefined
+        if (dueDateError) setFieldError(dueDateError)
+        else setSaveError(messageOf(error))
+        return false
+      },
+    )
+    inFlightRef.current = promise
+    return promise
   }
 
   // Guarda lo que haya en el campo, si es una fecha completa y distinta de la
-  // guardada. `min`/`max` hacen que un año a medio teclear (0202…) no sea
-  // válido, y `badInput` cubre las fechas a medias o imposibles.
+  // última mandada. `min`/`max` hacen que un año a medio teclear (0202…) no
+  // sea válido, y `badInput` cubre las fechas a medias o imposibles. Devuelve
+  // `false` si el campo no es válido.
   const commit = () => {
     cancelPending()
     const input = inputRef.current
-    if (!input || !savedRef.current) return
+    if (!input || !savedRef.current) return true
 
     if (!input.validity.valid) {
       setFieldError(INVALID_DATE)
-      return
+      return false
     }
 
     const dueDate = input.value || null
-    if (dueDate === savedRef.current.dueDate) return
-    void save(dueDate)
+    if (dueDate !== sentRef.current) void save(dueDate)
+    return true
   }
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,11 +175,18 @@ export function TaskDialog({
     void save(null)
   }
 
-  const handleOpenChange = (open: boolean) => {
-    if (open) return
-    // Cerrar no pierde el cambio pendiente.
-    commit()
+  // Cerrar no pierde el cambio pendiente: lo guarda y espera a la respuesta.
+  // Si la fecha no es válida o el guardado falla, la tarea sigue abierta con
+  // la explicación a la vista, en vez de perder el cambio en silencio.
+  const close = async () => {
+    if (!commit()) return
+    const pending = inFlightRef.current
+    if (pending && !(await pending)) return
     onClose()
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) void close()
   }
 
   return (
@@ -212,6 +241,9 @@ export function TaskDialog({
                   max="9999-12-31"
                   value={inputValue}
                   onChange={handleChange}
+                  // Una fecha a medias en un campo vacío no cambia su valor
+                  // (sigue siendo ""), así que solo salir del campo la delata.
+                  onBlur={() => commit()}
                   aria-invalid={Boolean(fieldError)}
                   aria-describedby={fieldError ? 'due-date-error' : undefined}
                 />

@@ -70,7 +70,7 @@ La validación se hace **antes** de validar el cuerpo y de tocar la base de dato
   - Afecta a todas las operaciones por igual, también a las de escritura.
   - No ensucia las rutas.
   - El cliente la pone en un solo sitio, `request()` de `api.ts`.
-- **Fallback UTC sin cabecera:** un cliente que no la mande, como `curl`, sigue funcionando, y lo que ve es predecible.
+- **Fallback UTC sin cabecera:** un cliente que no la mande, como `curl`, sigue funcionando, y lo que ve es predecible. Una cabecera vacía cuenta como ausente, porque algunos proxies y clientes la mandan así.
 - **Alternativa descartada, un middleware que deja el día en `ctx`:** más maquinaria para cuatro acciones de un solo controlador. Basta un método privado del controlador.
 
 ### D4 — `dueDate` en los validadores y en la escritura
@@ -86,7 +86,7 @@ updateTaskValidator = vine.create({ status: ..., assigneeId: ..., dueDate: dueDa
 - **Del `Date` de VineJS al modelo:** no hace falta convertir nada. El proyecto ya registra en `start/validator.ts` un transform global (`VineDate.transform`) que entrega toda fecha validada como `DateTime` con `DateTime.fromJSDate`. VineJS parsea en la zona local del proceso y Luxon convierte en esa misma zona, así que el día no se desplaza sea cual sea la zona del servidor.
 - **En `update`:**
   - `status` y `assigneeId` se siguen fusionando tal cual llegan.
-  - `dueDate` solo se asigna si la clave está en el payload (`'dueDate' in payload`). Si se desestructurara, volvería el bug de `undefined` del change anterior.
+  - `dueDate` se separa del payload y solo se asigna si no es `undefined`, es decir, si la clave llegó. No se fusiona con `merge`: si se fusionara sin llegar, volvería el bug de `undefined` del change anterior.
 - **El mensaje para la web:** `api.ts` gana `dueDate: 'la fecha de vencimiento'` en `FIELD_LABELS` y un caso para la regla `date`, "Introduce una fecha válida.".
 
 ### D5 — Representación: el transformer recibe el día
@@ -145,7 +145,8 @@ Es una acción `show` nueva: `findOrFail`, cargar `assignee` y serializar. La ru
   - Un año de menos de cuatro cifras o de más de cuatro es una fecha completa para el navegador, pero no para una persona. Lo marcan `rangeUnderflow` y `rangeOverflow`.
   - En cualquiera de esos tres casos `validity.valid` es falso: no se guarda nada y se pinta junto al campo "La fecha está incompleta o no existe." (CA-14).
   - Con `""` y `validity.valid` verdadero, la persona ha vaciado el campo, y se trata como "Quitar fecha".
-  - La validez se comprueba cuando vence la espera del guardado, o cuando se fuerza el guardado. Así el mensaje no aparece en cada pulsación mientras se escribe.
+  - La validez se comprueba cuando vence la espera del guardado, al salir del campo, o cuando se fuerza el guardado. Así el mensaje no aparece en cada pulsación mientras se escribe.
+  - Salir del campo hace falta: en un campo vacío, una fecha a medias no cambia el valor (sigue siendo `""`), así que no dispara ningún evento de cambio.
   - Una fecha completa se guarda con `updateTask(id, { dueDate })`. La señal y el valor se actualizan con la respuesta.
   - Si la petición falla, el campo vuelve a la fecha anterior y aparece un `Alert` en castellano.
 - **Escribir el año dígito a dígito:**
@@ -153,8 +154,11 @@ Es una acción `show` nueva: `findOrFail`, cargar `assignee` y serializar. La ru
   - Esas fechas intermedias no se guardan nunca, porque tienen un año de menos de cuatro cifras y `min` las deja fuera, sin depender del ritmo de quien teclea.
   - Además, el guardado espera unos 500 ms sin cambios, con un `setTimeout` que se reinicia. Esto ya no protege la corrección, solo evita mandar una petición y pintar un mensaje con cada pulsación.
   - **Alternativa descartada, solo la espera sin `min`:** quien tecleara el año con más de 500 ms entre dígitos guardaría `0202-10-05` un momento. Haría parpadear "Vencida" y rompería el escenario "Fecha incompleta o imposible".
-  - Se ignoran las respuestas de una petición ya superada, con un contador de peticiones.
-  - "Quitar fecha" y el cierre del diálogo guardan al momento lo que esté pendiente, así que cerrar no pierde el cambio (CA-16).
+  - Se ignoran las respuestas de una petición ya superada, con un contador de peticiones. Solo la última llega a la lista por `onTaskChange`.
+  - Si se ha vuelto a editar el campo mientras una petición estaba en vuelo, su respuesta actualiza la tarea y la señal, pero no pisa lo escrito.
+  - Lo que decide si hay que guardar es la última fecha mandada, no la guardada. Así, volver a la fecha original con una petición en vuelo también se manda.
+  - "Quitar fecha" guarda al momento lo que esté pendiente.
+  - Cerrar el diálogo guarda lo pendiente y espera a la respuesta (CA-16). Si la fecha no es válida o el guardado falla, la tarea sigue abierta con la explicación o el aviso a la vista, en vez de perder el cambio sin decir nada.
 - **Accesibilidad del diálogo, ajustada al probarlo:**
   - Sin `DialogDescription` (`aria-describedby={undefined}`): una descripción como "Pon, cambia o quita la fecha…" se anuncia al abrir, y en una tarea sin fecha sería justo la sugerencia que CA-12 prohíbe.
   - El botón de cerrar de `DialogContent` tiene la etiqueta en inglés ("Close"). Se desactiva con `showCloseButton={false}` y se pone un botón propio "Cerrar", sin tocar más el componente generado.
@@ -179,7 +183,7 @@ Es una acción `show` nueva: `findOrFail`, cargar `assignee` y serializar. La ru
   - En `status`, `""` sigue siendo "no enviado" y responde 200 sin cambios, un caso que quedó pendiente en `add-task-list`.
   - La asimetría se documenta y no se toca aquí.
 - **[Debounce del guardado]**
-  - Entre el cambio y el guardado pasan unos 500 ms. Si se recarga la página justo en ese intervalo, el cambio se pierde. Cerrar el diálogo no lo pierde, porque fuerza el guardado.
+  - Entre el cambio y el guardado pasan unos 500 ms. Si se recarga la página justo en ese intervalo, el cambio se pierde. Cerrar el diálogo no lo pierde, porque fuerza el guardado y espera a que termine.
   - Se acepta a cambio de no mandar una petición por pulsación. Las fechas intermedias como `0202-10-05` ya las bloquea `min`, no la espera.
 - **[Años fuera de 1000–9999]**
   - La web no deja guardar una fecha con un año de menos de cuatro cifras o de más de cuatro. La API sí acepta cualquier fecha válida en formato `YYYY-MM-DD`, también con años por debajo de 1000.
