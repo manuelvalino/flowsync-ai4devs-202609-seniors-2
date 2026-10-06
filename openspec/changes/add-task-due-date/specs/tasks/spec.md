@@ -257,7 +257,7 @@ Toda representación de una tarea que devuelva la API SHALL incluir el booleano 
 
 ### Requirement: Día de referencia de quien mira
 
-El día de referencia de cada petición de tareas SHALL ser la fecha actual en la zona horaria IANA que el cliente indique en la cabecera `X-Timezone`. Si la petición no trae esa cabecera, SHALL usarse la fecha actual en UTC. Si la cabecera no es una zona horaria válida, la API SHALL responder 422 con un error sobre `timezone`, sin crear ni modificar ninguna tarea. La aplicación web SHALL enviar siempre la zona horaria del navegador.
+El día de referencia de cada petición de tareas SHALL ser la fecha actual en la zona horaria IANA que el cliente indique en la cabecera `X-Timezone`. Si la petición no trae esa cabecera, o la trae vacía, SHALL usarse la fecha actual en UTC. Si la cabecera no es una zona horaria válida, la API SHALL responder 422 con un error sobre `timezone`, sin crear ni modificar ninguna tarea. La aplicación web SHALL enviar siempre la zona horaria del navegador.
 
 #### Scenario: Cada persona ve el vencimiento según su día
 
@@ -268,6 +268,11 @@ El día de referencia de cada petición de tareas SHALL ser la fecha actual en l
 
 - **WHEN** se pide una tarea sin la cabecera `X-Timezone`
 - **THEN** la respuesta se calcula con la fecha actual en UTC como día de referencia
+
+#### Scenario: Zona horaria vacía
+
+- **WHEN** se pide una tarea con la cabecera `X-Timezone` vacía
+- **THEN** la respuesta es 200 y se calcula con la fecha actual en UTC como día de referencia, igual que sin la cabecera
 
 #### Scenario: Zona horaria no válida
 
@@ -302,7 +307,7 @@ La API SHALL permitir a cualquier persona autenticada leer cualquier tarea por s
 
 En la pantalla de tareas, el título de cada fila SHALL abrir esa tarea sin salir de la lista, tanto con el ratón como con el teclado. La tarea abierta SHALL mostrar su título y un campo "Fecha de vencimiento" con la fecha actual de la tarea, o vacío si no tiene. Cuando la tarea tenga fecha, SHALL ofrecer además la acción "Quitar fecha". Si la API indica que la tarea está vencida, SHALL mostrar la señal "Vencida" con texto e icono, no solo con color. Si no tiene fecha, no SHALL mostrar ningún aviso, recordatorio ni sugerencia de ponerle una.
 
-Poner, cambiar o quitar la fecha SHALL guardarse sin botón de guardar ni diálogo de confirmación. El nuevo valor y la señal SHALL actualizarse al instante con lo que devuelva la API. Una fecha incompleta o imposible no SHALL guardarse: la tarea SHALL conservar la fecha anterior y SHALL aparecer una explicación en castellano junto al campo. La web no SHALL decidir por su cuenta si una tarea está vencida. Tras cerrar la tarea, la lista SHALL seguir sin mostrar fechas ni marcas de vencimiento.
+Poner, cambiar o quitar la fecha SHALL guardarse sin botón de guardar ni diálogo de confirmación. El nuevo valor y la señal SHALL actualizarse al instante con lo que devuelva la API. Una fecha incompleta o imposible no SHALL guardarse: la tarea SHALL conservar la fecha anterior y SHALL aparecer una explicación en castellano junto al campo. La web no SHALL decidir por su cuenta si una tarea está vencida. Cerrar la tarea SHALL ser siempre inmediato: un cambio de fecha válido pendiente SHALL guardarse igualmente, una fecha incompleta o imposible SHALL descartarse, y si el guardado falla con la tarea ya cerrada, la pantalla de tareas SHALL mostrar un aviso de error en castellano que nombre la tarea. Tras cerrar la tarea, la lista SHALL seguir sin mostrar fechas ni marcas de vencimiento.
 
 #### Scenario: Abrir una tarea
 
@@ -358,6 +363,16 @@ Poner, cambiar o quitar la fecha SHALL guardarse sin botón de guardar ni diálo
 
 - **WHEN** una persona cambia la fecha de una tarea, la cierra y la vuelve a abrir
 - **THEN** ve la fecha nueva, sin haber dado ningún paso extra de guardado
+
+#### Scenario: Cerrar con una fecha a medias
+
+- **WHEN** una persona deja a medio escribir una fecha en el campo y cierra la tarea
+- **THEN** la tarea se cierra, no se guarda nada y la tarea conserva la fecha que tenía
+
+#### Scenario: El guardado falla después de cerrar
+
+- **WHEN** una persona cambia la fecha, cierra la tarea en seguida y el servidor rechaza el cambio o no está accesible
+- **THEN** la pantalla de tareas muestra un aviso de error en castellano que nombra la tarea
 
 #### Scenario: Fecha de una tarea ajena desde la web
 

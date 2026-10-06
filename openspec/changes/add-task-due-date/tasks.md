@@ -16,7 +16,7 @@
 - [x] 2.3 En `TasksController`:
   - Un método privado que valide `X-Timezone` con `timezoneValidator` y devuelva `DateTime.now().setZone(tz ?? 'UTC').toISODate()`, que las cuatro acciones llaman antes de validar el cuerpo o tocar la base de datos.
   - `store` guarda `dueDate` tal cual sale del validador (el transform global de `start/validator.ts` ya lo entrega como `DateTime`), o `null` si no llega.
-  - `update` fusiona `status` y `assigneeId` como hasta ahora y asigna `dueDate` solo si la clave está en el payload (`null` quita la fecha).
+  - `update` fusiona `status` y `assigneeId` como hasta ahora y separa `dueDate`, que solo se asigna si no es `undefined`, es decir, si la clave llegó (`null` quita la fecha).
   - Una acción `show` nueva: `findOrFail`, cargar `assignee` y serializar.
   - Todas las respuestas pasan el día a `TaskTransformer.transform(..., today)`.
 

@@ -154,11 +154,12 @@ Es una acción `show` nueva: `findOrFail`, cargar `assignee` y serializar. La ru
   - Esas fechas intermedias no se guardan nunca, porque tienen un año de menos de cuatro cifras y `min` las deja fuera, sin depender del ritmo de quien teclea.
   - Además, el guardado espera unos 500 ms sin cambios, con un `setTimeout` que se reinicia. Esto ya no protege la corrección, solo evita mandar una petición y pintar un mensaje con cada pulsación.
   - **Alternativa descartada, solo la espera sin `min`:** quien tecleara el año con más de 500 ms entre dígitos guardaría `0202-10-05` un momento. Haría parpadear "Vencida" y rompería el escenario "Fecha incompleta o imposible".
-  - Se ignoran las respuestas de una petición ya superada, con un contador de peticiones. Solo la última llega a la lista por `onTaskChange`.
+  - Las respuestas se ordenan con un contador de peticiones. Una respuesta correcta de una petición ya superada no cambia la pantalla, pero sí la versión guardada y la lista, porque es lo que tiene el servidor en ese momento. Así, si la petición siguiente falla, se vuelve a ella y no a una fecha anterior. Una respuesta más antigua que la ya aplicada se descarta.
   - Si se ha vuelto a editar el campo mientras una petición estaba en vuelo, su respuesta actualiza la tarea y la señal, pero no pisa lo escrito.
   - Lo que decide si hay que guardar es la última fecha mandada, no la guardada. Así, volver a la fecha original con una petición en vuelo también se manda.
-  - "Quitar fecha" guarda al momento lo que esté pendiente.
-  - Cerrar el diálogo guarda lo pendiente y espera a la respuesta (CA-16). Si la fecha no es válida o el guardado falla, la tarea sigue abierta con la explicación o el aviso a la vista, en vez de perder el cambio sin decir nada.
+  - "Quitar fecha" guarda al momento, vacía también los segmentos de una fecha a medias (React no los toca si el valor ya era `""`) y lleva el foco al campo, porque el botón desaparece.
+  - **Cerrar es siempre inmediato** (CA-16). Lo pendiente se guarda si es una fecha válida, y una fecha a medias se descarta: la tarea conserva la suya. Si ese guardado falla con el diálogo ya cerrado, `onSaveError` lo avisa en la pantalla de tareas, nombrando la tarea.
+  - **Alternativa descartada, bloquear el cierre** hasta que la fecha sea válida y el guardado termine: deja a la persona atrapada en el diálogo y obliga a un "Descartar" y a esperar a la red para cerrar.
 - **Accesibilidad del diálogo, ajustada al probarlo:**
   - Sin `DialogDescription` (`aria-describedby={undefined}`): una descripción como "Pon, cambia o quita la fecha…" se anuncia al abrir, y en una tarea sin fecha sería justo la sugerencia que CA-12 prohíbe.
   - El botón de cerrar de `DialogContent` tiene la etiqueta en inglés ("Close"). Se desactiva con `showCloseButton={false}` y se pone un botón propio "Cerrar", sin tocar más el componente generado.
@@ -183,7 +184,7 @@ Es una acción `show` nueva: `findOrFail`, cargar `assignee` y serializar. La ru
   - En `status`, `""` sigue siendo "no enviado" y responde 200 sin cambios, un caso que quedó pendiente en `add-task-list`.
   - La asimetría se documenta y no se toca aquí.
 - **[Debounce del guardado]**
-  - Entre el cambio y el guardado pasan unos 500 ms. Si se recarga la página justo en ese intervalo, el cambio se pierde. Cerrar el diálogo no lo pierde, porque fuerza el guardado y espera a que termine.
+  - Entre el cambio y el guardado pasan unos 500 ms. Si se recarga la página justo en ese intervalo, el cambio se pierde. Cerrar el diálogo no lo pierde, porque fuerza el guardado.
   - Se acepta a cambio de no mandar una petición por pulsación. Las fechas intermedias como `0202-10-05` ya las bloquea `min`, no la espera.
 - **[Años fuera de 1000–9999]**
   - La web no deja guardar una fecha con un año de menos de cuatro cifras o de más de cuatro. La API sí acepta cualquier fecha válida en formato `YYYY-MM-DD`, también con años por debajo de 1000.

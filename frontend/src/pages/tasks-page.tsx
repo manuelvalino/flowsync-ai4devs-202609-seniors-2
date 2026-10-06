@@ -42,7 +42,9 @@ export function TasksPage() {
   const { token } = useAuth()
   const [tasks, setTasks] = useState<Task[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [statusError, setStatusError] = useState<string | null>(null)
+  // Fallos al cambiar el estado desde la fila o al guardar la fecha de una
+  // tarea que ya se ha cerrado.
+  const [updateError, setUpdateError] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [openTask, setOpenTask] = useState<Pick<Task, 'id' | 'title'> | null>(
     null,
@@ -105,14 +107,14 @@ export function TasksPage() {
   const handleStatusChange = async (task: Task, status: TaskStatus) => {
     if (status === task.status) return
 
-    setStatusError(null)
+    setUpdateError(null)
     setTaskStatus(task.id, status)
 
     try {
       replaceTask(await updateTask(token, task.id, { status }))
     } catch (error) {
       setTaskStatus(task.id, task.status)
-      setStatusError(messageOf(error))
+      setUpdateError(messageOf(error))
     }
   }
 
@@ -166,10 +168,10 @@ export function TasksPage() {
             </div>
           </form>
 
-          {statusError && (
+          {updateError && (
             <Alert variant="destructive">
               <AlertCircleIcon />
-              <AlertDescription>{statusError}</AlertDescription>
+              <AlertDescription>{updateError}</AlertDescription>
             </Alert>
           )}
 
@@ -248,6 +250,7 @@ export function TasksPage() {
           title={openTask.title}
           onClose={() => setOpenTask(null)}
           onTaskChange={replaceTask}
+          onSaveError={setUpdateError}
         />
       )}
     </div>
