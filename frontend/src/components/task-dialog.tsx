@@ -67,6 +67,8 @@ export function TaskDialog({
   // correcta se ha aplicado: una respuesta más antigua no pisa a una nueva.
   const requestRef = useRef(0)
   const appliedRef = useRef(0)
+  // Si la última petición ya ha respondido (bien o mal).
+  const latestSettledRef = useRef(true)
   // Tras cerrar, los fallos ya no se pueden enseñar aquí: los avisa la lista.
   const closedRef = useRef(false)
   // Quien abrió la tarea (el título de la fila). Radix devuelve el foco a su
@@ -114,6 +116,7 @@ export function TaskDialog({
     if (!token) return
 
     const request = ++requestRef.current
+    latestSettledRef.current = false
     sentRef.current = dueDate
     setSaveError(null)
     setFieldError(null)
@@ -126,13 +129,18 @@ export function TaskDialog({
       appliedRef.current = request
       savedRef.current = updated
       onTaskChange(updated)
-      if (request !== requestRef.current) return
+      const isLatest = request === requestRef.current
+      if (isLatest) latestSettledRef.current = true
+      // Una respuesta superada solo se pinta si la última ya falló y la
+      // pantalla volvió a una fecha que el servidor ya no tiene.
+      else if (!latestSettledRef.current) return
       sentRef.current = updated.dueDate
       setTask(updated)
       // Si se ha vuelto a editar el campo mientras tanto, no se pisa lo escrito.
       if (!timerRef.current) setInputValue(updated.dueDate ?? '')
     } catch (error) {
       if (request !== requestRef.current) return
+      latestSettledRef.current = true
       if (closedRef.current) {
         onSaveError(
           `No se ha guardado la fecha de «${title}». ${messageOf(error)}`,

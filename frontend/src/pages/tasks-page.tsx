@@ -249,7 +249,11 @@ export function TasksPage() {
           taskId={openTask.id}
           title={openTask.title}
           onClose={() => setOpenTask(null)}
-          onTaskChange={replaceTask}
+          onTaskChange={(task) => {
+            // Un guardado correcto deja atrás el aviso de uno anterior.
+            setUpdateError(null)
+            replaceTask(task)
+          }}
           onSaveError={setUpdateError}
         />
       )}
