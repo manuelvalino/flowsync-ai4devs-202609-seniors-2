@@ -33,5 +33,16 @@ router
       .prefix('account')
       .as('profile')
       .use(middleware.auth())
+
+    router
+      .group(() => {
+        router.get('/', [controllers.Tasks, 'index'])
+        router.get(':id', [controllers.Tasks, 'show']).where('id', router.matchers.number())
+        router.post('/', [controllers.Tasks, 'store'])
+        router.patch(':id', [controllers.Tasks, 'update']).where('id', router.matchers.number())
+      })
+      .prefix('tasks')
+      .as('tasks')
+      .use(middleware.auth())
   })
   .prefix('/api/v1')

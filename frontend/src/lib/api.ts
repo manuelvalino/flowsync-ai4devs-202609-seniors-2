@@ -1,6 +1,16 @@
-import type { AuthResult, LoginPayload, SignupPayload, User } from '@/lib/types'
+import type {
+  AuthResult,
+  LoginPayload,
+  SignupPayload,
+  Task,
+  TaskStatus,
+  User,
+} from '@/lib/types'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3333'
+
+/** Zona horaria IANA del navegador, o `undefined` si no la resuelve. */
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone
 
 /** Forma de cada error que devuelve el backend: `{ errors: [...] }`. */
 type BackendError = {
@@ -35,6 +45,8 @@ const FIELD_LABELS: Record<string, string> = {
   email: 'el email',
   password: 'la contraseña',
   passwordConfirmation: 'la confirmación de la contraseña',
+  title: 'el título',
+  dueDate: 'la fecha de vencimiento',
 }
 
 const label = (field?: string) => FIELD_LABELS[field ?? ''] ?? 'el campo'
@@ -61,6 +73,8 @@ function translate(error: BackendError): string {
       return `${label(field)} debe tener al menos ${meta?.min} caracteres.`
     case 'maxLength':
       return `${label(field)} no puede superar los ${meta?.max} caracteres.`
+    case 'date':
+      return 'Introduce una fecha válida.'
     default:
       return `Revisa ${label(field)}.`
   }
@@ -102,7 +116,7 @@ function toApiError(status: number, body: unknown): ApiError {
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PATCH'
   body?: unknown
   token?: string | null
 }
@@ -114,6 +128,8 @@ async function request<T>(
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
+  // El backend decide si una tarea está vencida según el día de quien pide.
+  if (TIME_ZONE) headers['X-Timezone'] = TIME_ZONE
 
   let response: Response
   try {
@@ -163,4 +179,47 @@ export function logout(token: string): Promise<void> {
   return request('/api/v1/account/logout', { method: 'POST', token }).then(
     () => undefined,
   )
+}
+
+export function listTasks(token: string): Promise<Task[]> {
+  return request<{ data: Task[] }>('/api/v1/tasks', { token }).then(
+    (response) => response.data,
+  )
+}
+
+export function getTask(token: string, id: number): Promise<Task> {
+  return request<{ data: Task }>(`/api/v1/tasks/${id}`, { token }).then(
+    (response) => response.data,
+  )
+}
+
+export function createTask(
+  token: string,
+  payload: { title: string },
+): Promise<Task> {
+  return request<{ data: Task }>('/api/v1/tasks', {
+    method: 'POST',
+    body: payload,
+    token,
+  }).then((response) => response.data)
+}
+
+/**
+ * Expone `assigneeId` aunque la web todavía no reasigna, para que el contrato
+ * de la API quede reflejado entero en un solo sitio.
+ */
+export function updateTask(
+  token: string,
+  id: number,
+  payload: {
+    status?: TaskStatus
+    assigneeId?: number
+    dueDate?: string | null
+  },
+): Promise<Task> {
+  return request<{ data: Task }>(`/api/v1/tasks/${id}`, {
+    method: 'PATCH',
+    body: payload,
+    token,
+  }).then((response) => response.data)
 }
