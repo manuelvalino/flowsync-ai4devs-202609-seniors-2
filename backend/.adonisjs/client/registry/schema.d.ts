@@ -67,6 +67,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/tasks_controller').default['index']>>>
     }
   }
+  'tasks.tasks.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/tasks/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/tasks_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/tasks_controller').default['show']>>>
+    }
+  }
   'tasks.tasks.store': {
     methods: ["POST"]
     pattern: '/api/v1/tasks'

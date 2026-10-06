@@ -4,6 +4,7 @@ import { AlertCircleIcon, Loader2Icon } from 'lucide-react'
 import { useAuth } from '@/auth/use-auth'
 import { useAuthForm } from '@/auth/use-auth-form'
 import { FieldError } from '@/components/field-error'
+import { TaskDialog } from '@/components/task-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,6 +44,9 @@ export function TasksPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
   const [title, setTitle] = useState('')
+  const [openTask, setOpenTask] = useState<Pick<Task, 'id' | 'title'> | null>(
+    null,
+  )
   const { isSubmitting, formError, fieldErrors, submit, failWith } =
     useAuthForm(FIELDS)
 
@@ -79,6 +83,15 @@ export function TasksPage() {
     })
   }
 
+  // La tarea abierta devuelve cada versión guardada; la lista la guarda aunque
+  // no pinte ni la fecha ni el vencimiento.
+  const replaceTask = (updated: Task) =>
+    setTasks(
+      (current) =>
+        current?.map((item) => (item.id === updated.id ? updated : item)) ??
+        null,
+    )
+
   const setTaskStatus = (id: number, status: TaskStatus) =>
     setTasks(
       (current) =>
@@ -96,12 +109,7 @@ export function TasksPage() {
     setTaskStatus(task.id, status)
 
     try {
-      const updated = await updateTask(token, task.id, { status })
-      setTasks(
-        (current) =>
-          current?.map((item) => (item.id === updated.id ? updated : item)) ??
-          null,
-      )
+      replaceTask(await updateTask(token, task.id, { status }))
     } catch (error) {
       setTaskStatus(task.id, task.status)
       setStatusError(messageOf(error))
@@ -193,7 +201,15 @@ export function TasksPage() {
                   className="flex items-center justify-between gap-4 py-3"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium break-words">{task.title}</p>
+                    <button
+                      type="button"
+                      className="focus-visible:ring-ring/50 rounded-sm text-left font-medium break-words hover:underline focus-visible:ring-[3px] focus-visible:outline-none"
+                      onClick={() =>
+                        setOpenTask({ id: task.id, title: task.title })
+                      }
+                    >
+                      {task.title}
+                    </button>
                     <p className="text-muted-foreground text-sm">
                       {task.assignee.fullName ?? 'Sin nombre'}
                     </p>
@@ -224,6 +240,16 @@ export function TasksPage() {
           )}
         </CardContent>
       </Card>
+
+      {openTask && (
+        <TaskDialog
+          key={openTask.id}
+          taskId={openTask.id}
+          title={openTask.title}
+          onClose={() => setOpenTask(null)}
+          onTaskChange={replaceTask}
+        />
+      )}
     </div>
   )
 }

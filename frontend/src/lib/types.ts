@@ -52,4 +52,8 @@ export type Task = {
   title: string
   status: TaskStatus
   assignee: { id: number; fullName: string | null }
+  /** Fecha de calendario `YYYY-MM-DD`, o `null` si la tarea no tiene. */
+  dueDate: string | null
+  /** Veredicto del backend para el día de quien pide. La web nunca lo calcula. */
+  isOverdue: boolean
 }
