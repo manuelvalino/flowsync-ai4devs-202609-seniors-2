@@ -2,7 +2,20 @@ import Task from '#models/task'
 import { setTaskDueDateValidator, toCalendarDay } from '#validators/task'
 import type { HttpContext } from '@adonisjs/core/http'
 import TaskDetailTransformer from '#transformers/task_detail_transformer'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse } from '@foadonis/openapi/decorators'
+import {
+  NotFoundResponse,
+  TaskDetailResponse,
+  UnauthorizedResponse,
+  ValidationErrorResponse,
+} from '#openapi/schemas'
 
+@ApiBearerAuth()
+@ApiResponse({
+  status: 401,
+  description: 'Falta el token o no es válido.',
+  type: UnauthorizedResponse,
+})
 export default class TaskDueDatesController {
   /**
    * Fijar, cambiar y retirar la fecha de vencimiento son la misma operación, y
@@ -16,6 +29,42 @@ export default class TaskDueDatesController {
    * Cualquiera con sesión puede cambiar la fecha de cualquier tarea, igual que
    * el estado. No se comprueba quién es el responsable.
    */
+  @ApiOperation({ summary: 'Fijar, cambiar o retirar la fecha de vencimiento' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['dueDate', 'today'],
+      properties: {
+        dueDate: {
+          type: 'string',
+          format: 'date',
+          nullable: true,
+          description: 'Día del calendario (AAAA-MM-DD), o `null` para retirar la fecha.',
+        },
+        today: {
+          type: 'string',
+          format: 'date',
+          description:
+            'Día de referencia de quien pide, para devolver `isOverdue` ya resuelto en la respuesta.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'La tarea con la fecha nueva.',
+    type: TaskDetailResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No existe ninguna tarea con ese id.',
+    type: NotFoundResponse,
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Fecha imposible o mal formada, o falta `today`; la tarea conserva su fecha.',
+    type: ValidationErrorResponse,
+  })
   async update({ params, request, serialize }: HttpContext) {
     const task = await Task.findOrFail(params.id)
     const { today, dueDate } = await request.validateUsing(setTaskDueDateValidator)
