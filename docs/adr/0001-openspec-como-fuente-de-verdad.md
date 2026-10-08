@@ -32,6 +32,8 @@ La **spec viva** de `openspec/specs/<capability>/spec.md` es la fuente de verdad
 
 ## Estado
 
+Reemplazada por el [ADR 0002](0002-tests-como-fuente-de-verdad-ejecutable.md).
+
 Aceptada, como registro a posteriori. La práctica ya estaba en uso desde el 2026-08-13, con los tres changes archivados ese día. Este ADR la deja escrita el 2026-10-08, sin cambiarla.
 
 ## Consecuencias
