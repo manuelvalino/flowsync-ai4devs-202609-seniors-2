@@ -27,7 +27,7 @@ test.group('Tasks | responsable', (group) => {
    * El `assignee` de una misma tarea según cada lectura. La suelta exige el día
    * de quien mira; cualquiera vale, aquí no se mira el vencimiento.
    */
-  async function responsables(client: any, token: string, task: Task) {
+  async function responsables(client: any, assert: any, token: string, task: Task) {
     const suelta = await client
       .get(`/api/v1/tasks/${task.id}`)
       .qs({ today: '2026-10-08' })
@@ -40,6 +40,7 @@ test.group('Tasks | responsable', (group) => {
     lista.assertStatus(200)
 
     const enLista = lista.body().data.find((t: { id: number }) => t.id === task.id)
+    assert.exists(enLista, 'la tarea no aparece en la lista')
 
     return { suelta: suelta.body().data.assignee, lista: enLista?.assignee }
   }
@@ -52,9 +53,10 @@ test.group('Tasks | responsable', (group) => {
       assigneeId: user.id,
     })
 
-    const { suelta, lista } = await responsables(client, token, task)
+    const { suelta, lista } = await responsables(client, assert, token, task)
 
     for (const [lectura, assignee] of Object.entries({ suelta, lista })) {
+      assert.equal(assignee.id, user.id, lectura)
       assert.equal(assignee.fullName, 'Ada Lovelace', lectura)
       assert.equal(assignee.initials, 'AL', lectura)
     }
@@ -71,12 +73,14 @@ test.group('Tasks | responsable', (group) => {
       assigneeId: user.id,
     })
 
-    const { suelta, lista } = await responsables(client, token, task)
+    const { suelta, lista } = await responsables(client, assert, token, task)
 
     for (const [lectura, assignee] of Object.entries({ suelta, lista })) {
-      // Lo justo para identificarlo: el nombre, las iniciales y la referencia.
-      assert.sameMembers(Object.keys(assignee), ['id', 'fullName', 'initials'], lectura)
+      // Primero lo que la spec nombra: el email. Luego, que no venga nada más
+      // que el nombre, las iniciales y la referencia.
+      assert.notProperty(assignee, 'email', lectura)
       assert.notInclude(JSON.stringify(assignee), 'ada@example.com', lectura)
+      assert.sameMembers(Object.keys(assignee), ['id', 'fullName', 'initials'], lectura)
     }
   })
 
@@ -91,12 +95,12 @@ test.group('Tasks | responsable', (group) => {
       assigneeId: user.id,
     })
 
-    const { suelta, lista } = await responsables(client, token, task)
+    const { suelta, lista } = await responsables(client, assert, token, task)
 
     for (const [lectura, assignee] of Object.entries({ suelta, lista })) {
       assert.isNull(assignee.fullName, lectura)
-      assert.isString(assignee.initials, lectura)
-      assert.isNotEmpty(assignee.initials, lectura)
+      // Las mismas que fija «Iniciales de la cuenta» para una cuenta sin nombre.
+      assert.equal(assignee.initials, 'AE', lectura)
     }
   })
 })
