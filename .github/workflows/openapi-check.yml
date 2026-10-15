@@ -1,0 +1,51 @@
+name: openapi-check
+
+# Comprueba que docs/api/openapi.json coincide con el contrato que genera el
+# código. Solo lee y compara: no escribe en el repositorio ni publica nada.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Lo único que necesita el trabajo es leer el código para hacer checkout.
+permissions:
+  contents: read
+
+# Un push nuevo a la misma rama cancela la ejecución anterior de ese PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  openapi-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Lo mínimo que exige `start/env.ts` para arrancar. No hay .env en CI.
+      # APP_KEY es un valor de relleno, no un secreto: este trabajo no firma ni
+      # cifra nada que importe.
+      NODE_ENV: development
+      TZ: UTC
+      PORT: '3333'
+      HOST: localhost
+      LOG_LEVEL: info
+      APP_KEY: ci-only-not-a-secret-0123456789abcdef
+      APP_URL: http://localhost:3333
+      SESSION_DRIVER: memory
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run openapi:check
